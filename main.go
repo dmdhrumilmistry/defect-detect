@@ -8,6 +8,7 @@ import (
 	"github.com/dmdhrumilmistry/defect-detect/pkg/config"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/db"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/service/component"
+	"github.com/dmdhrumilmistry/defect-detect/pkg/service/sbom"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 )
@@ -48,9 +49,14 @@ func main() {
 	}
 
 	// create stores
-	compStore := component.NewComponentSbomStore(mgo.Db)
-	compHandler := component.NewComponentSbomHandler(compStore)
-	compHandler.RegisterRoutes(r)
+	log.Info().Msg("Registering Routes")
+	sbomStore := sbom.NewComponentSbomStore(mgo.Db)
+	sbomHandler := sbom.NewComponentSbomHandler(sbomStore)
+	sbomHandler.RegisterRoutes(r)
+
+	componentStore := component.NewComponentStore(mgo.Db)
+	componentHandler := component.NewComponentHandler(componentStore, sbomStore)
+	componentHandler.RegisterRoutes(r)
 
 	// Start the server
 	if err := r.Run(":" + cfg.HostPort); err != nil {

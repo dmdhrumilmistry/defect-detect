@@ -2,9 +2,9 @@ package component
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/types"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/bson"
@@ -13,49 +13,82 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const COMPONENT_SBOM_COLLECTION = "component_sbom"
+const COMPONENT_COLLECTION = "component"
 
-type ComponentSbomStore struct {
+type ComponentStore struct {
 	db         *mongo.Database
 	collection *mongo.Collection
 }
 
-func NewComponentSbomStore(db *mongo.Database) *ComponentSbomStore {
-	collection := db.Collection(COMPONENT_SBOM_COLLECTION)
+func NewComponentStore(db *mongo.Database) *ComponentStore {
+	collection := db.Collection(COMPONENT_COLLECTION)
 	// TODO: create index if not exists
 
-	return &ComponentSbomStore{
+	return &ComponentStore{
 		db:         db,
 		collection: collection,
 	}
 }
 
-func (c *ComponentSbomStore) AddComponentSbom(sbom cyclonedx.BOM) (string, error) {
-	result, err := c.collection.InsertOne(context.TODO(), sbom)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to ins")
-		return "", err
-	}
-	log.Print(result)
-	log.Print(result.InsertedID)
-	log.Printf("%T", result.InsertedID)
+func (c *ComponentStore) AddComponentUsingSbom(sbom types.Sbom) ([]string, error) {
+	componentName := sbom.Metadata.Component.Name
+	componentVersion := sbom.Metadata.Component.Version
+	insertedIds := []string{}
 
-	return (result.InsertedID).(string), nil
+	var components []interface{}
+	for _, component := range *sbom.Components {
+		log.Print(component)
+		log.Print(component.Licenses)
+		fmt.Print("=================")
+
+		// fetch licenses slice from sbom
+		var licences []string
+		if component.Licenses != nil {
+			for _, license := range *component.Licenses {
+				if license.License != nil && license.License.ID != "" {
+					log.Print(license.License.ID)
+					licences = append(licences, license.License.ID)
+				}
+			}
+		}
+
+		// create components slice
+		components = append(components, types.Component{
+			Name:             component.Name,
+			Version:          component.Version,
+			PackageUrl:       component.PackageURL,
+			Licenses:         licences,
+			Type:             string(component.Type),
+			ComponentName:    componentName,
+			ComponentVersion: componentVersion,
+		})
+	}
+
+	results, err := c.collection.InsertMany(context.TODO(), components)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to insert")
+		return insertedIds, err
+	}
+
+	for _, insertedId := range results.InsertedIDs {
+		insertedIds = append(insertedIds, insertedId.(primitive.ObjectID).Hex())
+	}
+
+	return insertedIds, nil
 }
 
-func (c *ComponentSbomStore) GetComponentSbomTotalCount() (int64, error) {
+func (c *ComponentStore) GetComponentTotalCount() (int64, error) {
 	// Get total count of documents
 	total, err := c.collection.CountDocuments(context.TODO(), bson.M{})
 	if err != nil {
-		return 0, err
+		return -1, err
 	}
 
 	return total, nil
 }
 
-// Handler for getting paginated items
-func (c *ComponentSbomStore) GetPaginatedSboms(page, limit, duration int) ([]types.Sbom, error) {
-	var sboms []types.Sbom
+func (c *ComponentStore) GetComponentsUsingFilter(filter interface{}, page, limit, duration int) ([]types.Component, error) {
+	var components []types.Component
 
 	// Calculate skip
 	skip := (page - 1) * limit
@@ -69,38 +102,36 @@ func (c *ComponentSbomStore) GetPaginatedSboms(page, limit, duration int) ([]typ
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(duration)*time.Second)
 	defer cancel()
 
-	cursor, err := c.collection.Find(ctx, bson.M{}, findOptions)
+	cursor, err := c.collection.Find(ctx, filter, findOptions)
 	if err != nil {
-		return sboms, err
+		return components, err
 	}
 	defer cursor.Close(ctx)
 
 	// Parse results
-	if err := cursor.All(ctx, &sboms); err != nil {
-		return sboms, err
+	if err := cursor.All(ctx, &components); err != nil {
+		return components, err
 	}
 
-	return sboms, nil
+	return components, nil
 }
 
 // Handler for getting paginated items
-func (c *ComponentSbomStore) GetSbomById(idParam string, duration int) (types.Sbom, error) {
-	var sbom types.Sbom
+func (c *ComponentStore) GetPaginatedComponents(page, limit, duration int) ([]types.Component, error) {
+	return c.GetComponentsUsingFilter(bson.M{}, page, limit, duration)
+}
 
+// Handler for getting paginated items
+func (c *ComponentStore) GetComponentById(idParam string, duration int) ([]types.Component, error) {
 	// Convert the string ID to a MongoDB ObjectID
 	objID, err := primitive.ObjectIDFromHex(idParam)
 	if err != nil {
-		return sbom, err
+		return []types.Component{}, err
 	}
 
-	// Query MongoDB
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(duration)*time.Second)
-	defer cancel()
+	return c.GetComponentsUsingFilter(bson.M{"_id": objID}, 1, 1, 5)
+}
 
-	err = c.collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&sbom)
-	if err != nil {
-		return sbom, err
-	}
-
-	return sbom, nil
+func (c *ComponentStore) GetComponentByName(name string, duration int) ([]types.Component, error) {
+	return c.GetComponentsUsingFilter(bson.M{"component_name": name}, 1, 1, 5)
 }

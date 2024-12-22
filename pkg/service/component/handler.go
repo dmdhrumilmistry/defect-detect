@@ -1,73 +1,66 @@
 package component
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
-	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/types"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type ComponentSbomHandler struct {
-	store types.ComponentStore
+type ComponentHandler struct {
+	store     types.ComponentStore
+	sbomStore types.SbomStore
 }
 
-func NewComponentSbomHandler(store types.ComponentStore) *ComponentSbomHandler {
-	return &ComponentSbomHandler{
-		store: store,
+func NewComponentHandler(store types.ComponentStore, sbomStore types.SbomStore) *ComponentHandler {
+	return &ComponentHandler{
+		store:     store,
+		sbomStore: sbomStore,
 	}
 }
 
-func (s *ComponentSbomHandler) RegisterRoutes(r *gin.Engine) {
+func (s *ComponentHandler) RegisterRoutes(r *gin.Engine) {
 	// api v1
-	r.POST("/api/v1/component", s.UploadSbomHandler)
-	r.GET("/api/v1/component", s.GetSboms)
-	r.GET("/api/v1/component/:id", s.GetSbomById)
+	r.POST("/api/v1/component", s.AddComponentUsingSbomId)
+	r.GET("/api/v1/component", s.GetComponents)
+	r.GET("/api/v1/component/:id", s.GetComponentById)
+	r.GET("/api/v1/component/getByName", s.GetComponentByName)
 	log.Info().Msg("component routes registered")
 }
 
 // curl -X POST -F "sbom=@example-sbom.json" http://localhost:8080/api/v1/component
-func (s *ComponentSbomHandler) UploadSbomHandler(c *gin.Context) {
-	file, err := c.FormFile("sbom")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to upload file"})
-		return
-	}
-
-	fileContent, err := file.Open()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid file content"})
-		return
-	}
-	defer fileContent.Close()
-
-	decoder := cyclonedx.NewBOMDecoder(fileContent, cyclonedx.BOMFileFormatJSON)
-	var bom cyclonedx.BOM
-	if err := decoder.Decode(&bom); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid SBOM format"})
-		return
-	}
-	fmt.Println(bom)
-
-	// Store component SBOM
-	componentId, err := s.store.AddComponentSbom(bom)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to upload component SBOM",
+func (s *ComponentHandler) AddComponentUsingSbomId(c *gin.Context) {
+	sbomId, exists := c.GetQuery("sbom_id")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "invalid request",
 		})
 		return
 	}
-	// TODO: create scan task
 
-	c.JSON(http.StatusOK, gin.H{"message": "SBOM uploaded successfully", "id": componentId})
+	sbom, err := s.sbomStore.GetSbomById(sbomId, 5)
+	if err == mongo.ErrNoDocuments {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Item not found"})
+		return
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch item"})
+		return
+	}
+
+	Ids, err := s.store.AddComponentUsingSbom(sbom)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add components from sbom"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Components created successfully from Sbom", "ids": Ids})
 }
 
-// curl http://localhost:8080/api/v1/component
-func (s *ComponentSbomHandler) GetSboms(c *gin.Context) {
+// curl "http://localhost:8080/api/v1/component?page=1&limit=10"
+func (s *ComponentHandler) GetComponents(c *gin.Context) {
 	// Get page and limit from query parameters
 	pageStr := c.DefaultQuery("page", "1")
 	limitStr := c.DefaultQuery("limit", "10")
@@ -84,14 +77,14 @@ func (s *ComponentSbomHandler) GetSboms(c *gin.Context) {
 		return
 	}
 
-	sboms, err := s.store.GetPaginatedSboms(page, limit, 5)
+	sboms, err := s.store.GetPaginatedComponents(page, limit, 5)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to parse sbom data")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse data"})
 		return
 	}
 
-	total, err := s.store.GetComponentSbomTotalCount()
+	total, err := s.store.GetComponentTotalCount()
 	if err != nil {
 		log.Error().Err(err).Msg("failed to get total sbom data")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse data"})
@@ -107,13 +100,39 @@ func (s *ComponentSbomHandler) GetSboms(c *gin.Context) {
 	})
 }
 
-func (s *ComponentSbomHandler) GetSbomById(c *gin.Context) {
+// curl http://localhost:8080/api/v1/component/{component_id}
+func (s *ComponentHandler) GetComponentById(c *gin.Context) {
 	// Get the ID from the path parameter
 	idParam := c.Param("id")
 
 	// Convert the string ID to a MongoDB ObjectID
-	sbom, err := s.store.GetSbomById(idParam, 5)
-	log.Print(err)
+	components, err := s.store.GetComponentById(idParam, 5)
+
+	if err == mongo.ErrNoDocuments {
+		c.JSON(http.StatusNotFound, gin.H{"error": "component not found"})
+		return
+	} else if err != nil {
+		log.Error().Err(err).Msg("failed to fetch component")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch component"})
+		return
+	}
+
+	// Return the item as JSON
+	c.JSON(http.StatusOK, components)
+}
+
+// curl "http://localhost:8080/api/v1/component/getByName?name=enigma"
+func (s *ComponentHandler) GetComponentByName(c *gin.Context) {
+	// Get the ID from the path parameter
+	name, exists := c.GetQuery("name")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	// Convert the string ID to a MongoDB ObjectID
+	components, err := s.store.GetComponentByName(name, 5)
+
 	if err == mongo.ErrNoDocuments {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Item not found"})
 		return
@@ -123,5 +142,5 @@ func (s *ComponentSbomHandler) GetSbomById(c *gin.Context) {
 	}
 
 	// Return the item as JSON
-	c.JSON(http.StatusOK, sbom)
+	c.JSON(http.StatusOK, components)
 }
