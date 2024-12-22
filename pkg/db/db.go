@@ -47,3 +47,13 @@ func NewMongo(cfg *config.Config) (*Mongo, error) {
 		Db:     db,
 	}, nil
 }
+
+func EnsureIndex(collection *mongo.Collection, indexModel mongo.IndexModel) {
+	// Create the index
+	indexName, err := collection.Indexes().CreateOne(context.TODO(), indexModel)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to create index")
+	} else {
+		log.Info().Msgf("Index Created successfully: %s", indexName)
+	}
+}

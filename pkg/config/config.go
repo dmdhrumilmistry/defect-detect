@@ -3,6 +3,8 @@ package config
 import (
 	"os"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -19,6 +21,7 @@ type Config struct {
 }
 
 func NewConfig() *Config {
+	godotenv.Load()
 	env := strings.ToLower(getEnvString("ENV", "production"))
 
 	return &Config{
