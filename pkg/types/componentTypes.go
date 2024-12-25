@@ -19,6 +19,7 @@ type Component struct {
 	Type             string   `json:"type" bson:"type"`
 	ComponentName    string   `json:"component_name" bson:"component_name"`
 	ComponentVersion string   `json:"component_version" bson:"component_version"`
+	SbomId           string   `json:"sbom_id" bson:"sbom_id"`
 	Vulns            []Vuln   `json:"vulns" bson:"vulns"`
 }
 

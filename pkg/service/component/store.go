@@ -2,8 +2,10 @@ package component
 
 import (
 	"context"
+	"sync"
 	"time"
 
+	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/types"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/bson"
@@ -31,40 +33,79 @@ func NewComponentStore(db *mongo.Database, analyzer types.Analyzer) *ComponentSt
 	}
 }
 
-func (c *ComponentStore) processComponents(sbom types.Sbom, componentName, componentVersion string) []interface{} {
+func (c *ComponentStore) processComponents(sbom types.Sbom, componentName, componentVersion string, workers int) []interface{} {
 	var components []interface{}
-	for _, component := range *sbom.Components {
-		// fetch licenses slice from sbom
-		var licences []string
-		if component.Licenses != nil {
-			for _, license := range *component.Licenses {
-				if license.License != nil && license.License.ID != "" {
-					licences = append(licences, license.License.ID)
+	type vulnResult struct {
+		Component types.Component
+		Err       error
+	}
+
+	// Channels for work distribution and results collection
+	workCh := make(chan *cyclonedx.Component)
+	resultCh := make(chan vulnResult)
+
+	// Worker function
+	worker := func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		for component := range workCh {
+			var licences []string
+			if component.Licenses != nil {
+				for _, license := range *component.Licenses {
+					if license.License != nil && license.License.ID != "" {
+						licences = append(licences, license.License.ID)
+					}
 				}
 			}
-		}
 
-		var vulns []types.Vuln
-		var err error
-		log.Info().Msgf("%v", component.PackageURL)
-		if component.PackageURL != "" {
-			vulns, err = c.Analyzer.GetVulns(component.PackageURL)
-			if err != nil {
-				log.Error().Err(err).Msgf("failed to analyze vulns for %s", component.PackageURL)
+			var vulns []types.Vuln
+			var err error
+			if component.PackageURL != "" {
+				vulns, err = c.Analyzer.GetVulns(component.PackageURL)
+				if err != nil {
+					log.Error().Err(err).Msgf("failed to analyze vulns for %s", component.PackageURL)
+				}
+			}
+
+			// Send the result back
+			resultCh <- vulnResult{
+				Component: types.Component{
+					Name:             component.Name,
+					Version:          component.Version,
+					PackageUrl:       component.PackageURL,
+					Licenses:         licences,
+					Type:             string(component.Type),
+					ComponentName:    componentName,
+					ComponentVersion: componentVersion,
+					Vulns:            vulns,
+				},
+				Err: err,
 			}
 		}
+	}
 
-		// create components slice
-		components = append(components, types.Component{
-			Name:             component.Name,
-			Version:          component.Version,
-			PackageUrl:       component.PackageURL,
-			Licenses:         licences,
-			Type:             string(component.Type),
-			ComponentName:    componentName,
-			ComponentVersion: componentVersion,
-			Vulns:            vulns,
-		})
+	// Start workers
+	var wg sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go worker(&wg)
+	}
+
+	// Send components to work channel
+	go func() {
+		for _, component := range *sbom.Components {
+			workCh <- &component
+		}
+		close(workCh)
+	}()
+
+	// Collect results
+	go func() {
+		wg.Wait()
+		close(resultCh)
+	}()
+
+	for result := range resultCh {
+		components = append(components, result.Component)
 	}
 
 	return components
@@ -75,7 +116,7 @@ func (c *ComponentStore) AddComponentUsingSbom(sbom types.Sbom) ([]string, error
 	componentVersion := sbom.Metadata.Component.Version
 	insertedIds := []string{}
 
-	components := c.processComponents(sbom, componentName, componentVersion)
+	components := c.processComponents(sbom, componentName, componentVersion, 20)
 
 	results, err := c.collection.InsertMany(context.TODO(), components)
 	if err != nil {
