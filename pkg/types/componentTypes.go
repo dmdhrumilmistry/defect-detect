@@ -1,5 +1,7 @@
 package types
 
+import "time"
+
 type ComponentStore interface {
 	AddComponentUsingSbom(sbom Sbom) ([]string, error)
 	GetComponentTotalCount() (int64, error)
@@ -17,5 +19,16 @@ type Component struct {
 	Type             string   `json:"type" bson:"type"`
 	ComponentName    string   `json:"component_name" bson:"component_name"`
 	ComponentVersion string   `json:"component_version" bson:"component_version"`
-	// TODO: add vuln field in component
+	Vulns            []Vuln   `json:"vulns" bson:"vulns"`
+}
+
+type Vuln struct {
+	ID            string       `json:"id,omitempty"`
+	Summary       string       `json:"summary,omitempty"`
+	Details       string       `json:"details,omitempty"`
+	Modified      time.Time    `json:"modified,omitempty"`
+	Published     time.Time    `json:"published,omitempty"`
+	References    []References `json:"references,omitempty"`
+	Affected      []Affected   `json:"affected,omitempty"`
+	SchemaVersion string       `json:"schema_version,omitempty"`
 }

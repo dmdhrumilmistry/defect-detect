@@ -31,7 +31,7 @@ func (s *ComponentHandler) RegisterRoutes(r *gin.Engine) {
 	log.Info().Msg("component routes registered")
 }
 
-// curl -X POST -F "sbom=@example-sbom.json" http://localhost:8080/api/v1/component
+// curl -X POST "http://localhost:8080/api/v1/component?sbom_id=676852a1af6020598db6e8d6"
 func (s *ComponentHandler) AddComponentUsingSbomId(c *gin.Context) {
 	sbomId, exists := c.GetQuery("sbom_id")
 	if !exists {

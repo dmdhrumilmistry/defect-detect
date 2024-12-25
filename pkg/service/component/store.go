@@ -2,7 +2,6 @@ package component
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/dmdhrumilmistry/defect-detect/pkg/types"
@@ -18,37 +17,40 @@ const COMPONENT_COLLECTION = "component"
 type ComponentStore struct {
 	db         *mongo.Database
 	collection *mongo.Collection
+	Analyzer   types.Analyzer
 }
 
-func NewComponentStore(db *mongo.Database) *ComponentStore {
+func NewComponentStore(db *mongo.Database, analyzer types.Analyzer) *ComponentStore {
 	collection := db.Collection(COMPONENT_COLLECTION)
 	// TODO: create index if not exists
 
 	return &ComponentStore{
 		db:         db,
 		collection: collection,
+		Analyzer:   analyzer,
 	}
 }
 
-func (c *ComponentStore) AddComponentUsingSbom(sbom types.Sbom) ([]string, error) {
-	componentName := sbom.Metadata.Component.Name
-	componentVersion := sbom.Metadata.Component.Version
-	insertedIds := []string{}
-
+func (c *ComponentStore) processComponents(sbom types.Sbom, componentName, componentVersion string) []interface{} {
 	var components []interface{}
 	for _, component := range *sbom.Components {
-		log.Print(component)
-		log.Print(component.Licenses)
-		fmt.Print("=================")
-
 		// fetch licenses slice from sbom
 		var licences []string
 		if component.Licenses != nil {
 			for _, license := range *component.Licenses {
 				if license.License != nil && license.License.ID != "" {
-					log.Print(license.License.ID)
 					licences = append(licences, license.License.ID)
 				}
+			}
+		}
+
+		var vulns []types.Vuln
+		var err error
+		log.Info().Msgf("%v", component.PackageURL)
+		if component.PackageURL != "" {
+			vulns, err = c.Analyzer.GetVulns(component.PackageURL)
+			if err != nil {
+				log.Error().Err(err).Msgf("failed to analyze vulns for %s", component.PackageURL)
 			}
 		}
 
@@ -61,8 +63,19 @@ func (c *ComponentStore) AddComponentUsingSbom(sbom types.Sbom) ([]string, error
 			Type:             string(component.Type),
 			ComponentName:    componentName,
 			ComponentVersion: componentVersion,
+			Vulns:            vulns,
 		})
 	}
+
+	return components
+}
+
+func (c *ComponentStore) AddComponentUsingSbom(sbom types.Sbom) ([]string, error) {
+	componentName := sbom.Metadata.Component.Name
+	componentVersion := sbom.Metadata.Component.Version
+	insertedIds := []string{}
+
+	components := c.processComponents(sbom, componentName, componentVersion)
 
 	results, err := c.collection.InsertMany(context.TODO(), components)
 	if err != nil {

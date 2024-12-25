@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/CycloneDX/cyclonedx-go"
+	"github.com/dmdhrumilmistry/defect-detect/pkg/analyzer/osv"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/config"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/db"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/service/component"
@@ -48,13 +49,16 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	// Analyzers
+	osvAnalyzer := osv.NewOsvAnalyzer()
+
 	// create stores
 	log.Info().Msg("Registering Routes")
 	sbomStore := sbom.NewComponentSbomStore(mgo.Db)
 	sbomHandler := sbom.NewComponentSbomHandler(sbomStore)
 	sbomHandler.RegisterRoutes(r)
 
-	componentStore := component.NewComponentStore(mgo.Db)
+	componentStore := component.NewComponentStore(mgo.Db, osvAnalyzer)
 	componentHandler := component.NewComponentHandler(componentStore, sbomStore)
 	componentHandler.RegisterRoutes(r)
 
