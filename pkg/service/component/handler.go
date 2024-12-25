@@ -52,7 +52,7 @@ func (s *ComponentHandler) AddComponentUsingSbomId(c *gin.Context) {
 
 	Ids, err := s.store.AddComponentUsingSbom(sbom)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add components from sbom"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add components from sbom or sbom is already processed"})
 		return
 	}
 

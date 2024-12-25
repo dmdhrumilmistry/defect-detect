@@ -2,6 +2,7 @@ package component
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -77,6 +78,7 @@ func (c *ComponentStore) processComponents(sbom types.Sbom, componentName, compo
 					ComponentName:    componentName,
 					ComponentVersion: componentVersion,
 					Vulns:            vulns,
+					SbomId:           sbom.Id,
 				},
 				Err: err,
 			}
@@ -111,10 +113,25 @@ func (c *ComponentStore) processComponents(sbom types.Sbom, componentName, compo
 	return components
 }
 
+func (c *ComponentStore) IsSbomProcessed(sbomId string) bool {
+	doc_count, err := c.collection.CountDocuments(context.TODO(), bson.M{"sbom_id": sbomId})
+	if err != nil {
+		log.Error().Err(err).Msgf("failed to count component docs with sbom_id %s", sbomId)
+		return false
+	}
+
+	log.Info().Msgf("%d components are already processed %s", doc_count, sbomId)
+	return doc_count != 0
+}
+
 func (c *ComponentStore) AddComponentUsingSbom(sbom types.Sbom) ([]string, error) {
 	componentName := sbom.Metadata.Component.Name
 	componentVersion := sbom.Metadata.Component.Version
 	insertedIds := []string{}
+
+	if c.IsSbomProcessed(sbom.Id) {
+		return insertedIds, fmt.Errorf("sbom is already processed")
+	}
 
 	components := c.processComponents(sbom, componentName, componentVersion, 20)
 
