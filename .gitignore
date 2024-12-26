@@ -24,3 +24,8 @@ go.work.sum
 # env file
 .env
 tmp
+
+# sboms
+bom.json
+sbom.json
+output.json
