@@ -1,12 +1,18 @@
 package sbom
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
 	"github.com/CycloneDX/cyclonedx-go"
+	"github.com/dmdhrumilmistry/defect-detect/pkg/sbomconvert"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/types"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -27,6 +33,8 @@ func (s *ComponentSbomHandler) RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/sbom", s.GetSboms)
 	r.GET("/api/v1/sbom/:id", s.GetSbomById)
 	r.GET("/api/v1/sbom/getByComponentName", s.GetSbomByName)
+	r.POST("/api/v1/sbom/convert", s.ConvertSbom)
+
 	log.Info().Msg("sbom routes registered")
 }
 
@@ -148,4 +156,56 @@ func (s *ComponentSbomHandler) GetSbomByName(c *gin.Context) {
 
 	// Return the item as JSON
 	c.JSON(http.StatusOK, sboms)
+}
+
+// curl -X POST -F "sbom=@sbom.json" "http://localhost:8080/api/v1/sbom/convert"
+// curl -X POST -F "sbom=@sbom.json" "http://localhost:8080/api/v1/sbom/convert" | jq '.converted_sbom.components.[].purl' -r
+func (s *ComponentSbomHandler) ConvertSbom(c *gin.Context) {
+	file, err := c.FormFile("sbom")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to upload file"})
+		return
+	}
+
+	fileContent, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid file content"})
+		return
+	}
+	defer fileContent.Close()
+
+	// Create a buffer to store the converted SBOM output
+	// Create a pipe to use as the output stream with a Close method
+	outputBuffer := &bytes.Buffer{}
+	outputStream := struct {
+		io.Writer
+		io.Closer
+	}{
+		Writer: outputBuffer,
+		Closer: io.NopCloser(nil), // Provides a no-op Close method
+	}
+
+	// Perform the conversion
+	err = sbomconvert.ConvertSbom(fileContent, outputStream)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to convert sbom")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to convert SBOM"})
+		return
+	}
+
+	var sbom map[string]interface{}
+	if err := json.Unmarshal(outputBuffer.Bytes(), &sbom); err != nil {
+		log.Error().Err(err).Msg("failed to convert sbom")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to convert SBOM"})
+		return
+	}
+
+	// update uuid for spdx
+	_, exists := sbom["serialNumber"]
+	if exists {
+		sbom["serialNumber"] = fmt.Sprintf("urn:uuid:%s", uuid.New().String())
+	}
+
+	// Return the converted SBOM as JSON
+	c.JSON(http.StatusOK, gin.H{"converted_sbom": sbom})
 }
