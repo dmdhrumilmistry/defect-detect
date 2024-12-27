@@ -38,14 +38,13 @@ func main() {
 	r = r.With()
 	r.SetTrustedProxies(nil)
 
-	cfg := config.NewConfig()
-	mgo, err := db.NewMongo(cfg)
+	mgo, err := db.NewMongo(config.DefaultConfig)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to get db connection")
 	}
 	defer mgo.Client.Disconnect(context.TODO())
 
-	if !cfg.IsDevEnv {
+	if !config.DefaultConfig.IsDevEnv {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
@@ -63,7 +62,7 @@ func main() {
 	componentHandler.RegisterRoutes(r)
 
 	// Start the server
-	if err := r.Run(":" + cfg.HostPort); err != nil {
-		log.Fatal().Err(err).Msgf("Failed to start server on port %s", cfg.HostPort)
+	if err := r.Run(":" + config.DefaultConfig.HostPort); err != nil {
+		log.Fatal().Err(err).Msgf("Failed to start server on port %s", config.DefaultConfig.HostPort)
 	}
 }

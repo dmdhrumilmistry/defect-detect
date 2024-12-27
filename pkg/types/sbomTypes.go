@@ -1,6 +1,7 @@
 package types
 
 import (
+	"bytes"
 	"encoding/xml"
 
 	"github.com/CycloneDX/cyclonedx-go"
@@ -40,4 +41,34 @@ type Sbom struct {
 	Formulation        *[]cyclonedx.Formula           `json:"formulation,omitempty" xml:"formulation>formula,omitempty"`
 	Declarations       *cyclonedx.Declarations        `json:"declarations,omitempty" xml:"declarations,omitempty"`
 	Definitions        *cyclonedx.Definitions         `json:"definitions,omitempty" xml:"definitions,omitempty"`
+}
+
+type GithubRepoImportRequestSchema struct {
+	Owner    string `json:"owner" binding:"required"`
+	RepoName string `json:"repo_name" binding:"required"`
+}
+
+type GithubRepoImportResponseSchema struct {
+	Sbom map[string]interface{}
+}
+
+type ReadSeekCloser struct {
+	*bytes.Reader
+}
+
+// Implement the Close method (no-op)
+func (r *ReadSeekCloser) Close() error {
+	// No-op: bytes.Reader doesn't need to be closed
+	return nil
+}
+
+// Custom WriteCloser type to implement io.WriteCloser
+type WriteCloser struct {
+	*bytes.Buffer
+}
+
+// Implement the Close method (no-op for Buffer)
+func (w *WriteCloser) Close() error {
+	// No-op: bytes.Buffer doesn't need to be closed
+	return nil
 }

@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strconv"
 
 	"github.com/CycloneDX/cyclonedx-go"
+	"github.com/dmdhrumilmistry/defect-detect/pkg/config"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/sbomconvert"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/types"
 	"github.com/gin-gonic/gin"
@@ -34,6 +36,7 @@ func (s *ComponentSbomHandler) RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/sbom/:id", s.GetSbomById)
 	r.GET("/api/v1/sbom/getByComponentName", s.GetSbomByName)
 	r.POST("/api/v1/sbom/convert", s.ConvertSbom)
+	r.POST("/api/v1/sbom/githubImport", s.ImportGithubRepo)
 
 	log.Info().Msg("sbom routes registered")
 }
@@ -68,7 +71,6 @@ func (s *ComponentSbomHandler) UploadSbomHandler(c *gin.Context) {
 		})
 		return
 	}
-	// TODO: create scan task
 
 	c.JSON(http.StatusOK, gin.H{"message": "SBOM uploaded successfully", "id": componentId})
 }
@@ -208,4 +210,112 @@ func (s *ComponentSbomHandler) ConvertSbom(c *gin.Context) {
 
 	// Return the converted SBOM as JSON
 	c.JSON(http.StatusOK, gin.H{"converted_sbom": sbom})
+}
+
+// curl -X POST -H "application/json" -d '{"owner":"dmdhrumilmistry", "repo_name":"pyhtools"}' http://localhost:8080/api/v1/sbom/githubImport
+func (s *ComponentSbomHandler) ImportGithubRepo(c *gin.Context) {
+	var jsonData types.GithubRepoImportRequestSchema
+
+	// Bind the incoming JSON data to the struct
+	if err := c.ShouldBindJSON(&jsonData); err != nil {
+		// If there is an error parsing the JSON, send an error response
+		log.Error().Err(err).Msg("invalid json data")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	// Validate the URL
+	sbomUrl := fmt.Sprintf("https://api.github.com/repos/%s/%s/dependency-graph/sbom", jsonData.Owner, jsonData.RepoName)
+	regex := `^https:\/\/api\.github\.com\/repos\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+\/dependency-graph\/sbom$`
+	re := regexp.MustCompile(regex)
+
+	if !re.MatchString(sbomUrl) {
+		log.Error().Msgf("owner (%s) and repo name (%s) are invalid", jsonData.Owner, jsonData.RepoName)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	log.Info().Msgf("Fetching SBOM for https://github.com/%s/%s repo", jsonData.Owner, jsonData.RepoName)
+
+	req, err := http.NewRequest(http.MethodGet, sbomUrl, nil)
+	if err != nil {
+		log.Error().Err(err).Msgf("failed to generate req for github.com/%s/%s", jsonData.Owner, jsonData.RepoName)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate request to fetch sbom github api"})
+		return
+	}
+	req.Header.Add("Accept", "application/vnd.github+json")
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", config.DefaultConfig.GithubToken))
+	req.Header.Add("X-GitHub-Api-Version", "2022-11-28")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Error().Err(err).Msgf("failed to fetch sbom from github.com/%s/%s", jsonData.Owner, jsonData.RepoName)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch sbom github api"})
+		return
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		log.Error().Err(err).Msgf("failed to fetch sbom from github.com/%s/%s. Expected 200 received %d from api", jsonData.Owner, jsonData.RepoName, res.StatusCode)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch sbom github api"})
+		return
+	}
+
+	// Read the response body into a buffer
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to read github api response body into buffer")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process the response body"})
+		return
+	}
+
+	var respPayload types.GithubRepoImportResponseSchema
+	if err := json.Unmarshal(body, &respPayload); err != nil {
+		log.Error().Err(err).Msg("failed to parse github api resp to json")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process the response body"})
+		return
+	}
+
+	sbomByte, err := json.Marshal(respPayload.Sbom)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to convert github api sbom resp to json")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process the github repo sbom"})
+
+		return
+	}
+
+	// Convert the buffer into an io.ReadSeekCloser (using a bytes.Reader)
+	readSeekCloser := &types.ReadSeekCloser{Reader: bytes.NewReader(sbomByte)}
+
+	// Create a buffer to store the converted SBOM output
+	outputBuffer := &bytes.Buffer{}
+	outputStream := &types.WriteCloser{
+		Buffer: outputBuffer,
+	}
+
+	if err := sbomconvert.ConvertSbom(readSeekCloser, outputStream); err != nil {
+		log.Error().Err(err).Msg("failed to convert sbom")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to convert sbom"})
+		return
+	}
+
+	decoder := cyclonedx.NewBOMDecoder(outputStream, cyclonedx.BOMFileFormatJSON)
+	var bom cyclonedx.BOM
+	if err := decoder.Decode(&bom); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid SBOM format"})
+		return
+	}
+
+	// Store component SBOM
+	componentId, err := s.store.AddComponentSbom(bom)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "failed to upload component SBOM",
+		})
+		return
+	}
+
+	// TODO: add task to process sbom component
+
+	c.JSON(http.StatusOK, gin.H{"message": "SBOM uploaded successfully", "id": componentId})
 }
