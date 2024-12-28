@@ -70,3 +70,24 @@ Detect vulnerable components using sboms
     # Output
     # {"ids":["676f0c4ff986a31a1ab2ecf5", "...snip..."],"message":"Components created successfully from Sbom"}
     ```
+
+* Fetch Vulnerable Components
+
+    ```bash
+    curl "http://localhost:8080/api/v1/component/vulns?sbom_ids=676f0bac3da126bf929f246c"
+    ```
+
+    > Response will be paginated
+
+    Supported query params: `sbom_ids`, `component_names`, `component_versions`, `types`, `names`, `versions`, `purls`
+    Multiple values is supported separated by `,` 
+
+    | Query Param | Description |
+    |:-----------:|:------------|
+    |sbom_ids|Id of SBOM uploaded to the application|
+    |component_names|Name of Component fetched from Github Repo SBOM (com.github.dmdhrumiilmistry/pyhtools) or uploaded Sbom metadata Component (pyhtools)|
+    |component_versions|Version of Component fetched from Github Repo SBOM (main) or uploaded Sbom metadata Component (latest/v1.1.1)|
+    |types|Type of sbom component such as package, framework, etc.|
+    |names|name of sbom component. It is usually dependency name|
+    |versions|version of sbom component|
+    |purl| package url of sbom component|
