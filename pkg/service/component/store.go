@@ -8,6 +8,7 @@ import (
 
 	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/types"
+	"github.com/dmdhrumilmistry/defect-detect/pkg/utils"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -148,9 +149,9 @@ func (c *ComponentStore) AddComponentUsingSbom(sbom types.Sbom) ([]string, error
 	return insertedIds, nil
 }
 
-func (c *ComponentStore) GetComponentTotalCount() (int64, error) {
+func (c *ComponentStore) GetComponentTotalCount(filter interface{}) (int64, error) {
 	// Get total count of documents
-	total, err := c.collection.CountDocuments(context.TODO(), bson.M{})
+	total, err := c.collection.CountDocuments(context.TODO(), filter)
 	if err != nil {
 		return -1, err
 	}
@@ -205,4 +206,45 @@ func (c *ComponentStore) GetComponentById(idParam string, duration int) ([]types
 
 func (c *ComponentStore) GetComponentByName(name string, duration int) ([]types.Component, error) {
 	return c.GetComponentsUsingFilter(bson.M{"component_name": name}, 1, 1, 5)
+}
+
+func (c *ComponentStore) GetVulnerableSbomComponentsFilter(componentNames, componentVersions, sbomIds, compTypes, compNames, purls, versions []string, page, limit int) bson.M {
+	conditions := map[string][]string{
+		"component_name":    componentNames,
+		"component_version": componentVersions,
+		"purl":              purls,
+		"sbom_id":           sbomIds,
+		"type":              compTypes,
+		"name":              compNames,
+		"version":           versions,
+	}
+	filter := utils.BuildDynamicContainsFilter(conditions)
+
+	// Add to the query: {vulns: { $exists: true, $ne: []}}
+	filter["vulns"] = bson.M{
+		"$exists": true,
+		"$ne":     []interface{}{}, // Ensure the array is not empty
+	}
+
+	log.Info().Msgf("%v", filter)
+
+	return filter
+}
+
+func (c *ComponentStore) GetVulnerableComponents(componentNames, componentVersions, sbomIds, compTypes, compNames, purls, versions []string, page, limit, duration int) (components []types.Component, total int64, err error) {
+	filter := c.GetVulnerableSbomComponentsFilter(componentNames, componentVersions, sbomIds, compTypes, compNames, purls, versions, page, limit)
+
+	components, err = c.GetComponentsUsingFilter(filter, page, limit, duration)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to get components")
+		return components, total, err
+	}
+
+	total, err = c.GetComponentTotalCount(filter)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get total components")
+		return components, total, err
+	}
+
+	return components, total, err
 }

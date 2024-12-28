@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"net/http"
 
-	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/analyzer/osv"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/config"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/db"
@@ -13,24 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 )
-
-type SBOMData struct {
-	Components []cyclonedx.Component `json:"components"`
-}
-
-var sboms = make(map[string]SBOMData) // In-memory storage for simplicity
-
-// curl "http://localhost:8080/api/components?sbom_id=bom.json"
-func listComponents(c *gin.Context) {
-	sbomID := c.Query("sbom_id")
-	sbomData, exists := sboms[sbomID]
-	if !exists {
-		c.JSON(http.StatusNotFound, gin.H{"error": "SBOM not found"})
-		return
-	}
-
-	c.JSON(http.StatusOK, sbomData.Components)
-}
 
 func main() {
 	r := gin.New()

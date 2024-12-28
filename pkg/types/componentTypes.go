@@ -4,10 +4,11 @@ import "time"
 
 type ComponentStore interface {
 	AddComponentUsingSbom(sbom Sbom) ([]string, error)
-	GetComponentTotalCount() (int64, error)
+	GetComponentTotalCount(filter interface{}) (int64, error)
 	GetPaginatedComponents(page, limit, duration int) ([]Component, error)
 	GetComponentById(idParam string, duration int) ([]Component, error)
 	GetComponentByName(name string, duration int) ([]Component, error)
+	GetVulnerableComponents(componentNames, componentVersions, sbomIds, compTypes, compNames, purls, versions []string, page, limit, duration int) (components []Component, total int64, err error)
 }
 
 type Component struct {

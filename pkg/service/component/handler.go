@@ -4,9 +4,12 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/dmdhrumilmistry/defect-detect/pkg/config"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/types"
+	"github.com/dmdhrumilmistry/defect-detect/pkg/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -28,6 +31,7 @@ func (s *ComponentHandler) RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/component", s.GetComponents)
 	r.GET("/api/v1/component/:id", s.GetComponentById)
 	r.GET("/api/v1/component/getByName", s.GetComponentByName)
+	r.GET("/api/v1/component/vulns", s.GetVulnerableComponents)
 	log.Info().Msg("component routes registered")
 }
 
@@ -84,7 +88,7 @@ func (s *ComponentHandler) GetComponents(c *gin.Context) {
 		return
 	}
 
-	total, err := s.store.GetComponentTotalCount()
+	total, err := s.store.GetComponentTotalCount(bson.M{})
 	if err != nil {
 		log.Error().Err(err).Msg("failed to get total sbom data")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse data"})
@@ -143,4 +147,44 @@ func (s *ComponentHandler) GetComponentByName(c *gin.Context) {
 
 	// Return the item as JSON
 	c.JSON(http.StatusOK, components)
+}
+
+func (s *ComponentHandler) GetVulnerableComponents(c *gin.Context) {
+	// Get page and limit from query parameters
+	pageStr := c.DefaultQuery("page", "1")
+	limitStr := c.DefaultQuery("limit", "10")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid page number"})
+		return
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 || limit >= 100 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit number"})
+		return
+	}
+
+	componentNames := utils.Split(c.DefaultQuery("component_names", ""), ",")
+	componentVersions := utils.Split(c.DefaultQuery("component_versions", ""), ",")
+	sbomIds := utils.Split(c.DefaultQuery("sbom_ids", ""), ",")
+	compTypes := utils.Split(c.DefaultQuery("types", ""), ",")
+	compNames := utils.Split(c.DefaultQuery("names", ""), ",")
+	versions := utils.Split(c.DefaultQuery("versions", ""), ",")
+	purls := utils.Split(c.DefaultQuery("purls", ""), ",")
+
+	vulnComps, total, err := s.store.GetVulnerableComponents(componentNames, componentVersions, sbomIds, compTypes, compNames, purls, versions, page, limit, config.DefaultConfig.DbQueryTimeout)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to get vulnerable components")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch vulnerable components"})
+	}
+
+	// Build response
+	c.JSON(http.StatusOK, gin.H{
+		"data":  vulnComps,
+		"page":  page,
+		"limit": limit,
+		"total": total,
+	})
 }
