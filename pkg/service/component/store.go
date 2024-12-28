@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/CycloneDX/cyclonedx-go"
+	"github.com/dmdhrumilmistry/defect-detect/pkg/config"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/types"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/utils"
 	"github.com/rs/zerolog/log"
@@ -201,11 +202,11 @@ func (c *ComponentStore) GetComponentById(idParam string, duration int) ([]types
 		return []types.Component{}, err
 	}
 
-	return c.GetComponentsUsingFilter(bson.M{"_id": objID}, 1, 1, 5)
+	return c.GetComponentsUsingFilter(bson.M{"_id": objID}, 1, 1, config.DefaultConfig.DbQueryTimeout)
 }
 
 func (c *ComponentStore) GetComponentByName(name string, duration int) ([]types.Component, error) {
-	return c.GetComponentsUsingFilter(bson.M{"component_name": name}, 1, 1, 5)
+	return c.GetComponentsUsingFilter(bson.M{"component_name": name}, 1, 1, config.DefaultConfig.DbQueryTimeout)
 }
 
 func (c *ComponentStore) GetVulnerableSbomComponentsFilter(componentNames, componentVersions, sbomIds, compTypes, compNames, purls, versions []string, page, limit int) bson.M {

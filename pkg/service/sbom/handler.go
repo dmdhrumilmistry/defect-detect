@@ -93,7 +93,7 @@ func (s *ComponentSbomHandler) GetSboms(c *gin.Context) {
 		return
 	}
 
-	sboms, err := s.store.GetPaginatedSboms(page, limit, 5)
+	sboms, err := s.store.GetPaginatedSboms(page, limit, config.DefaultConfig.DbQueryTimeout)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to parse sbom data")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse data"})
@@ -122,7 +122,7 @@ func (s *ComponentSbomHandler) GetSbomById(c *gin.Context) {
 	idParam := c.Param("id")
 
 	// Convert the string ID to a MongoDB ObjectID
-	sbom, err := s.store.GetSbomById(idParam, 5)
+	sbom, err := s.store.GetSbomById(idParam, config.DefaultConfig.DbQueryTimeout)
 	log.Print(err)
 	if err == mongo.ErrNoDocuments {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Item not found"})
@@ -146,7 +146,7 @@ func (s *ComponentSbomHandler) GetSbomByName(c *gin.Context) {
 	}
 
 	// Convert the string ID to a MongoDB ObjectID
-	sboms, err := s.store.GetSbomByName(name, 5)
+	sboms, err := s.store.GetSbomByName(name, config.DefaultConfig.DbQueryTimeout)
 	log.Print(err)
 	if err == mongo.ErrNoDocuments {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Item not found"})
