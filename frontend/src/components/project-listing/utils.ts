@@ -2,7 +2,7 @@ import type { LoaderFunction, LoaderFunctionArgs } from 'react-router-dom';
 
 const loadProjects: LoaderFunction = (args: LoaderFunctionArgs) => {
     // TODO :: get the user info
-    console.info('loadProjects ::', args);
+    console.info('[LOADER] Project(s) ::', args);
 
     const data = [
         {

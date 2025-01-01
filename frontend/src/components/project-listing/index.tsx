@@ -2,7 +2,7 @@ import { useLoaderData } from 'react-router-dom';
 
 export default function ProjectListing() {
     const data = useLoaderData();
-    console.info('ProjectListing :: ', data);
+    console.info('[COMP] ProjectListing :: ', data);
 
     return (
         <>

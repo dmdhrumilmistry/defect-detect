@@ -3,7 +3,7 @@ import type { StringKVs } from '../../types';
 
 export default function Project() {
     const data = useLoaderData() as StringKVs;
-    console.info('Project :: ', data);
+    console.info('[COMP] Project :: ', data);
 
     return (
         <>
