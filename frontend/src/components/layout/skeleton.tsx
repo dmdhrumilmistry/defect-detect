@@ -1,7 +1,7 @@
 export default function LayoutSkeleton() {
     return (
         <>
-            <div>Loading...</div>
+            <div>Layout Loading...</div>
         </>
     );
 }
