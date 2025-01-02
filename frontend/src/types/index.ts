@@ -24,3 +24,18 @@ export type MutateArgs = Readonly<{
     signal?: AbortSignal;
     throwError?: boolean;
 }>;
+
+export type TUser = Readonly<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    username: string;
+    image: string;
+}>;
+
+export type TProject = Readonly<{
+    id: string;
+    title: string;
+    description: string;
+}>;
