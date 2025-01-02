@@ -1,4 +1,4 @@
-import type { FetchProxyArgs, Maybe } from '../types';
+import type { FetchProxyArgs, Maybe } from '@/types';
 
 import RestService from './rest';
 

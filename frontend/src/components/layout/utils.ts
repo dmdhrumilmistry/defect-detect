@@ -1,8 +1,8 @@
 import type { LoaderFunction, LoaderFunctionArgs } from 'react-router-dom';
-import type { TUser } from '../../types';
-import { COOKIE_KEYS, API_BASE_URL, CACHE_KEYS } from '../../services/const';
-import RestServiceProxy from '../../services/rest-proxy';
-import CookieService from '../../services/cookie';
+import type { TUser } from '@/types';
+import { COOKIE_KEYS, API_BASE_URL, CACHE_KEYS } from '@/services/const';
+import RestServiceProxy from '@/services/rest-proxy';
+import CookieService from '@/services/cookie';
 
 const loadLayout: LoaderFunction = async (args: LoaderFunctionArgs) => {
     console.info('[LOADER] Layout ::', args);

@@ -1,4 +1,4 @@
-import type { TProject } from '../../types';
+import type { TProject } from '@/types';
 import { useLoaderData } from 'react-router-dom';
 
 export default function Project() {

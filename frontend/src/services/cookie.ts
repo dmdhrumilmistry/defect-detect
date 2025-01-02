@@ -1,4 +1,4 @@
-import type { Maybe } from '../types';
+import type { Maybe } from '@/types';
 
 export default class CookieService {
     static get(name: string): Maybe<string> {

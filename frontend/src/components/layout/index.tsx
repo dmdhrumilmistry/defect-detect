@@ -1,4 +1,4 @@
-import type { TUser } from '../../types';
+import type { TUser } from '@/types';
 import { Link, Outlet, useLoaderData, useNavigation } from 'react-router-dom';
 
 export default function Layout() {

@@ -1,4 +1,4 @@
-import type { FetchArgs, Maybe, MutateArgs } from '../types';
+import type { FetchArgs, Maybe, MutateArgs } from '@/types';
 
 export default class RestService {
     static async fetch<T = unknown>(args: FetchArgs): Promise<Maybe<T>> {

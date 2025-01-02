@@ -1,7 +1,7 @@
 import type { LoaderFunction, LoaderFunctionArgs } from 'react-router-dom';
-import type { TProject } from '../../types';
-import { API_BASE_URL, CACHE_KEYS } from '../../services/const';
-import RestServiceProxy from '../../services/rest-proxy';
+import type { TProject } from '@/types';
+import { API_BASE_URL, CACHE_KEYS } from '@/services/const';
+import RestServiceProxy from '@/services/rest-proxy';
 
 const loadProjects: LoaderFunction = async (args: LoaderFunctionArgs) => {
     console.info('[LOADER] Project(s) ::', args);
