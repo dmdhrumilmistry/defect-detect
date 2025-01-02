@@ -1,13 +1,14 @@
+import type { TProject } from '@/types';
 import { useLoaderData } from 'react-router-dom';
-import type { StringKVs } from '../../types';
 
 export default function Project() {
-    const data = useLoaderData() as StringKVs;
-    console.info('Project :: ', data);
+    const { project } = useLoaderData() as { project: TProject };
+    console.info('[COMP] Project :: ', project);
 
+    if (!project) return <div>Project failed to fetch!</div>;
     return (
         <>
-            <h1>{data.name}</h1>
+            <h1>{project.title}</h1>
         </>
     );
 }

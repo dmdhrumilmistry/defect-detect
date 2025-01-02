@@ -1,13 +1,13 @@
 import { useRouteError } from 'react-router-dom';
 
-export default function LayoutErrorBoundary() {
+export default function ProjectErrorBoundary() {
     const error = useRouteError();
-    console.error('[COMP] LayoutErrorBoundary :: ', error);
+    console.error('[COMP] ProjectErrorBoundary :: ', error);
 
     // TODO :: handle this UI
     return (
         <>
-            <div>Layout Error Boundary</div>
+            <div>Project Error Boundary</div>
         </>
     );
 }

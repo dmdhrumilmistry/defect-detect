@@ -1,12 +1,15 @@
-import { useLoaderData } from 'react-router-dom';
+import type { TProject } from '@/types';
+import { useLoaderData, useNavigation } from 'react-router-dom';
 
 export default function ProjectListing() {
-    const data = useLoaderData();
-    console.info('ProjectListing :: ', data);
+    const { projects } = useLoaderData() as { projects: TProject[] };
+    const navigation = useNavigation();
+    console.info('[COMP] ProjectListing :: ', projects, navigation);
 
     return (
         <>
             <h1>Project Listing</h1>
+            <code>Total projects: {projects.length}</code>
         </>
     );
 }
