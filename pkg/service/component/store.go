@@ -19,6 +19,10 @@ import (
 
 const COMPONENT_COLLECTION = "component"
 
+type vulnResult struct {
+	Component types.Component
+	Err       error
+}
 type ComponentStore struct {
 	db         *mongo.Database
 	collection *mongo.Collection
@@ -36,62 +40,99 @@ func NewComponentStore(db *mongo.Database, analyzer types.Analyzer) *ComponentSt
 	}
 }
 
+func (c *ComponentStore) processComponentsWorker(sbom types.Sbom, componentName, componentVersion string, wg *sync.WaitGroup, workCh <-chan *cyclonedx.Component, resultCh chan vulnResult) {
+	defer wg.Done()
+	for component := range workCh {
+		var licences []string
+		var vulns []types.Vuln
+		var pkgInfos []types.PackageInfo
+		var vulnErr, pkgInfoErr error
+
+		if component.Licenses != nil {
+			for _, license := range *component.Licenses {
+				if license.License != nil && license.License.ID != "" {
+					licences = append(licences, license.License.ID)
+				}
+			}
+		}
+
+		var innerWg sync.WaitGroup
+		// Channel to collect errors
+		errCh := make(chan error, 2)
+
+		// Fetch vulnerabilities concurrently
+		innerWg.Add(1)
+		go func() {
+			defer innerWg.Done()
+			if component.PackageURL != "" {
+				log.Info().Msgf("Processing vulns for purl %s", component.PackageURL)
+				vulns, vulnErr = c.Analyzer.GetVulns(component.PackageURL)
+				if vulnErr != nil {
+					log.Error().Err(vulnErr).Msgf("failed to analyze vulns for %s", component.PackageURL)
+					errCh <- vulnErr
+				} else {
+					log.Info().Msgf("Detected %d vulns for purl: %s", len(vulns), component.PackageURL)
+				}
+			}
+		}()
+
+		// Fetch package information concurrently
+		innerWg.Add(1)
+		go func() {
+			defer innerWg.Done()
+			pkgInfos, pkgInfoErr = c.Analyzer.GetPackageInfo(component.PackageURL)
+			if pkgInfoErr != nil {
+				log.Error().Err(pkgInfoErr).Msgf("failed to fetch package info for purl: %s", component.PackageURL)
+				errCh <- pkgInfoErr
+			}
+		}()
+
+		// Wait for both goroutines to complete
+		innerWg.Wait()
+		close(errCh)
+
+		// Aggregate errors
+		var combinedErr error
+		for err := range errCh {
+			if combinedErr == nil {
+				combinedErr = err
+			} else {
+				combinedErr = fmt.Errorf("%v; %w", combinedErr, err)
+			}
+		}
+
+		// Send the result back
+		resultCh <- vulnResult{
+			Component: types.Component{
+				Name:             component.Name,
+				Version:          component.Version,
+				PackageUrl:       component.PackageURL,
+				Licenses:         licences,
+				Type:             string(component.Type),
+				ComponentName:    componentName,
+				ComponentVersion: componentVersion,
+				Vulns:            vulns,
+				SbomId:           sbom.Id,
+				PackageInfos:     pkgInfos,
+			},
+			Err: combinedErr,
+		}
+	}
+}
+
 func (c *ComponentStore) processComponents(sbom types.Sbom, componentName, componentVersion string, workers int) []interface{} {
 	var components []interface{}
-	type vulnResult struct {
-		Component types.Component
-		Err       error
-	}
 
 	// Channels for work distribution and results collection
 	workCh := make(chan *cyclonedx.Component)
 	resultCh := make(chan vulnResult)
 
-	// Worker function
-	worker := func(wg *sync.WaitGroup) {
-		defer wg.Done()
-		for component := range workCh {
-			var licences []string
-			if component.Licenses != nil {
-				for _, license := range *component.Licenses {
-					if license.License != nil && license.License.ID != "" {
-						licences = append(licences, license.License.ID)
-					}
-				}
-			}
-
-			var vulns []types.Vuln
-			var err error
-			if component.PackageURL != "" {
-				vulns, err = c.Analyzer.GetVulns(component.PackageURL)
-				if err != nil {
-					log.Error().Err(err).Msgf("failed to analyze vulns for %s", component.PackageURL)
-				}
-			}
-
-			// Send the result back
-			resultCh <- vulnResult{
-				Component: types.Component{
-					Name:             component.Name,
-					Version:          component.Version,
-					PackageUrl:       component.PackageURL,
-					Licenses:         licences,
-					Type:             string(component.Type),
-					ComponentName:    componentName,
-					ComponentVersion: componentVersion,
-					Vulns:            vulns,
-					SbomId:           sbom.Id,
-				},
-				Err: err,
-			}
-		}
-	}
-
 	// Start workers
 	var wg sync.WaitGroup
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
-		go worker(&wg)
+		// go worker(&wg)
+		go c.processComponentsWorker(sbom, componentName, componentVersion, &wg, workCh, resultCh)
 	}
 
 	// Send components to work channel

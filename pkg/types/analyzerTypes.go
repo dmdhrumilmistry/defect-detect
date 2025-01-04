@@ -1,7 +1,10 @@
 package types
 
+import "time"
+
 type Analyzer interface {
 	GetVulns(purl string) ([]Vuln, error)
+	GetPackageInfo(purl string) ([]PackageInfo, error)
 }
 
 // Auto generated struct code for OSV response schema
@@ -33,6 +36,20 @@ type EcosystemSpecific struct {
 type DatabaseSpecific struct {
 	Source string `json:"source,omitempty"`
 }
+
+type GhsaDatabaseSpecific struct {
+	GithubReviewedAt time.Time `json:"github_reviewed_at,omitempty"`
+	GithubReviewed   bool      `json:"github_reviewed,omitempty"`
+	Severity         string    `json:"severity,omitempty"`
+	CweIds           []string  `json:"cwe_ids,omitempty"`
+	NvdPublishedAt   time.Time `json:"nvd_published_at,omitempty"`
+}
+
+type CvssSeverity struct {
+	TypeStr  string `json:"type,omitempty"`
+	ScoreStr string `json:"score,omitempty"`
+}
+
 type Affected struct {
 	Package           Package           `json:"package,omitempty"`
 	Ranges            []Ranges          `json:"ranges,omitempty"`
@@ -40,3 +57,27 @@ type Affected struct {
 	EcosystemSpecific EcosystemSpecific `json:"ecosystem_specific,omitempty"`
 	DatabaseSpecific  DatabaseSpecific  `json:"database_specific,omitempty"`
 }
+
+// End of Auto generated struct code for OSV response schema
+
+// Start of EPSS Structs
+type Epss struct {
+	CveId      string `json:"cve,omitempty"`
+	EpssScore  string `json:"epss,omitempty"`
+	Percentile string `json:"percentile,omitempty"`
+	Date       string `json:"date,omitempty"`
+}
+
+type EpssApiResponseSchema struct {
+	Status                    string `json:"status,omitempty"`
+	StatusCode                int    `json:"status-code,omitempty"`
+	Version                   string `json:"version,omitempty"`
+	AccessControlAllowHeaders string `json:"access-control-allow-headers,omitempty"`
+	Access                    string `json:"access,omitempty"`
+	Total                     int    `json:"total,omitempty"`
+	Offset                    int    `json:"offset,omitempty"`
+	Limit                     int    `json:"limit,omitempty"`
+	Data                      []Epss `json:"data,omitempty"`
+}
+
+// End of EPSS Structs

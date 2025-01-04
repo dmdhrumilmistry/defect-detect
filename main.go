@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/dmdhrumilmistry/defect-detect/pkg/analyzer/osv"
+	anz "github.com/dmdhrumilmistry/defect-detect/pkg/analyzer"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/config"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/db"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/service/component"
@@ -29,7 +29,7 @@ func main() {
 	}
 
 	// Analyzers
-	osvAnalyzer := osv.NewOsvAnalyzer()
+	analyzer := anz.NewAnalyzer()
 
 	// create stores
 	log.Info().Msg("Registering Routes")
@@ -37,7 +37,7 @@ func main() {
 	sbomHandler := sbom.NewComponentSbomHandler(sbomStore)
 	sbomHandler.RegisterRoutes(r)
 
-	componentStore := component.NewComponentStore(mgo.Db, osvAnalyzer)
+	componentStore := component.NewComponentStore(mgo.Db, analyzer)
 	componentHandler := component.NewComponentHandler(componentStore, sbomStore)
 	componentHandler.RegisterRoutes(r)
 
