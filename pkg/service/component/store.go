@@ -52,6 +52,10 @@ func (c *ComponentStore) processComponents(sbom types.Sbom, componentName, compo
 		defer wg.Done()
 		for component := range workCh {
 			var licences []string
+			var vulns []types.Vuln
+			var pkgInfos []types.PackageInfo
+			var err error
+
 			if component.Licenses != nil {
 				for _, license := range *component.Licenses {
 					if license.License != nil && license.License.ID != "" {
@@ -60,13 +64,20 @@ func (c *ComponentStore) processComponents(sbom types.Sbom, componentName, compo
 				}
 			}
 
-			var vulns []types.Vuln
-			var err error
+			// fetch vulns using analyzers
 			if component.PackageURL != "" {
+				log.Info().Msgf("Processing vulns for purl %s", component.PackageURL)
 				vulns, err = c.Analyzer.GetVulns(component.PackageURL)
 				if err != nil {
 					log.Error().Err(err).Msgf("failed to analyze vulns for %s", component.PackageURL)
 				}
+				log.Info().Msgf("Detected %d vulns for purl: %s", len(vulns), component.PackageURL)
+			}
+
+			// fetch alerts using analyzers
+			pkgInfos, err = c.Analyzer.GetPackageInfo(component.PackageURL)
+			if err != nil {
+				log.Error().Err(err).Msgf("failed to fetch package info for purl: %s", component.PackageURL)
 			}
 
 			// Send the result back
@@ -81,6 +92,7 @@ func (c *ComponentStore) processComponents(sbom types.Sbom, componentName, compo
 					ComponentVersion: componentVersion,
 					Vulns:            vulns,
 					SbomId:           sbom.Id,
+					PackageInfos:     pkgInfos,
 				},
 				Err: err,
 			}

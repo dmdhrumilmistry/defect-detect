@@ -24,6 +24,10 @@ type Config struct {
 
 	// Secrets
 	GithubToken string
+
+	// Analyzer Config
+	RunOsv  bool
+	RunMpaf bool
 }
 
 var DefaultConfig = NewConfig()
@@ -40,6 +44,10 @@ func NewConfig() *Config {
 		AppEnv:         env,
 		IsDevEnv:       env == "dev",
 		GithubToken:    getEnvString("GITHUB_TOKEN", ""),
+
+		// Analyzer Config
+		RunOsv:  getEnvBool("RUN_OSV_ANALYZER"),
+		RunMpaf: getEnvBool("RUN_MPAF_ANALYZER"),
 	}
 }
 
@@ -50,6 +58,11 @@ func getEnvString(key, defaultValue string) string {
 	}
 
 	return value
+}
+
+func getEnvBool(key string) bool {
+	value := strings.ToLower(os.Getenv(key))
+	return value == "true" || value == "1" || value == "yes"
 }
 
 func getEnvInt(key string, defaultValue int) int {
