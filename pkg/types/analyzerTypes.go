@@ -62,22 +62,22 @@ type Affected struct {
 
 // Start of EPSS Structs
 type Epss struct {
-	CveId      string `json:"cve,omitempty"`
-	EpssScore  string `json:"epss,omitempty"`
-	Percentile string `json:"percentile,omitempty"`
-	Date       string `json:"date,omitempty"`
+	CveId      string `json:"cve,omitempty" bson:"cve,omitempty"`
+	EpssScore  string `json:"epss,omitempty" bson:"epss,omitempty"`
+	Percentile string `json:"percentile,omitempty" bson:"percentile,omitempty"`
+	Date       string `json:"date,omitempty" bson:"date,omitempty"`
 }
 
 type EpssApiResponseSchema struct {
-	Status                    string `json:"status,omitempty"`
-	StatusCode                int    `json:"status-code,omitempty"`
-	Version                   string `json:"version,omitempty"`
+	// Status                    string `json:"status,omitempty"`
+	StatusCode int `json:"status-code,omitempty"`
+	// Version                   string `json:"version,omitempty"`
 	AccessControlAllowHeaders string `json:"access-control-allow-headers,omitempty"`
-	Access                    string `json:"access,omitempty"`
-	Total                     int    `json:"total,omitempty"`
-	Offset                    int    `json:"offset,omitempty"`
-	Limit                     int    `json:"limit,omitempty"`
-	Data                      []Epss `json:"data,omitempty"`
+	// Access                    string `json:"access,omitempty"`
+	Total  int    `json:"total,omitempty"`
+	Offset int    `json:"offset,omitempty"`
+	Limit  int    `json:"limit,omitempty"`
+	Data   []Epss `json:"data,omitempty"`
 }
 
 // End of EPSS Structs

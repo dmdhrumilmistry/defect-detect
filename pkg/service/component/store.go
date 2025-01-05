@@ -176,7 +176,7 @@ func (c *ComponentStore) AddComponentUsingSbom(sbom types.Sbom) ([]string, error
 		return insertedIds, fmt.Errorf("sbom is already processed")
 	}
 
-	components := c.processComponents(sbom, componentName, componentVersion, 20)
+	components := c.processComponents(sbom, componentName, componentVersion, config.DefaultConfig.DefaultWorkersCount)
 
 	results, err := c.collection.InsertMany(context.TODO(), components)
 	if err != nil {
@@ -267,8 +267,6 @@ func (c *ComponentStore) GetVulnerableSbomComponentsFilter(componentNames, compo
 		"$exists": true,
 		"$ne":     []interface{}{}, // Ensure the array is not empty
 	}
-
-	log.Info().Msgf("%v", filter)
 
 	return filter
 }
