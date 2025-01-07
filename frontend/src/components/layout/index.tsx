@@ -1,21 +1,22 @@
-import type { TUser } from '@/types';
-import { Link, Outlet, useLoaderData, useNavigation } from 'react-router-dom';
+import type { LayoutLoader } from '@/types';
+import { Outlet, useLoaderData, useNavigation } from 'react-router-dom';
+
+import Header from '@/components/header';
+import AppSidebar from '@/components/app-sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 
 export default function Layout() {
-    const { user } = useLoaderData() as { user: TUser };
+    const { user } = useLoaderData() as LayoutLoader;
     const navigation = useNavigation();
     console.info('[COMP] Layout :: ', user, navigation);
 
     return (
-        <>
-            {/* TODO :: Handle the surrounding layout UI */}
-            <h1>This is layout</h1>
-            <code>UserName: {user.username}</code>
-            <br />
-            <Link to="/projects">Navigate &gt; Projects</Link>
-            <br />
-            <Link to="/projects/30">Navigate &gt; Test Project</Link>
-            <Outlet />
-        </>
+        <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset>
+                <Header />
+                <Outlet />
+            </SidebarInset>
+        </SidebarProvider>
     );
 }

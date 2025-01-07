@@ -1,9 +1,9 @@
 import type { LoaderFunction, LoaderFunctionArgs } from 'react-router-dom';
-import type { TProject } from '@/types';
+import type { LoaderReturnValue, Maybe, ProjectLoader, RouteHandle, TProject } from '@/types';
 import { API_BASE_URL, CACHE_KEYS } from '@/services/const';
 import RestServiceProxy from '@/services/rest-proxy';
 
-const loadProject: LoaderFunction = async (args: LoaderFunctionArgs) => {
+const projectLoader: LoaderFunction = async (args: LoaderFunctionArgs): Promise<ProjectLoader> => {
     console.info('[LOADER] Project :: ', args);
     if (!args.params.projectId) throw new Error('Project Id not found!');
 
@@ -13,7 +13,15 @@ const loadProject: LoaderFunction = async (args: LoaderFunctionArgs) => {
         signal: args.request.signal,
         throwError: true,
     });
+    if (!project) throw new Error('Failed to fetch the project!');
     return { project };
 };
 
-export { loadProject };
+const projectHandle: RouteHandle = {
+    breadcrumb: (data: Maybe<LoaderReturnValue>) => {
+        if (data && 'project' in data) return { href: `/projects/${data.project.id}`, label: data.project.title };
+        else return { href: '/projects/null', label: 'Project' };
+    },
+};
+
+export { projectLoader, projectHandle };
