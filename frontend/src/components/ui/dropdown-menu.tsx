@@ -166,19 +166,24 @@ const DropdownMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTML
 DropdownMenuShortcut.displayName = 'DropdownMenuShortcut';
 
 export {
+    // main sidebar components
     DropdownMenu,
     DropdownMenuTrigger,
     DropdownMenuContent,
+    DropdownMenuLabel,
     DropdownMenuItem,
     DropdownMenuCheckboxItem,
     DropdownMenuRadioItem,
-    DropdownMenuLabel,
+
+    // helper dropdown components
     DropdownMenuSeparator,
     DropdownMenuShortcut,
-    DropdownMenuGroup,
     DropdownMenuPortal,
+
+    // group components used inside sidebar
+    DropdownMenuGroup,
     DropdownMenuSub,
-    DropdownMenuSubContent,
     DropdownMenuSubTrigger,
+    DropdownMenuSubContent,
     DropdownMenuRadioGroup,
 };

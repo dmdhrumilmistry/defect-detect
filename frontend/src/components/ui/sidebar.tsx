@@ -620,29 +620,29 @@ export {
     SidebarSeparator,
     useSidebar,
     SidebarInput,
+    SidebarRail,
 
     // main sidebar components
     Sidebar,
     SidebarHeader,
-    SidebarFooter,
     SidebarContent,
-    SidebarRail,
-
+    SidebarFooter,
+    
     // group components used inside sidebar
     SidebarGroup,
-    SidebarGroupAction,
     SidebarGroupLabel,
+    SidebarGroupAction,
     SidebarGroupContent,
 
     // menu components used inside sidebar
-    SidebarMenu,
+    SidebarMenu, // wrapper for multiple menu item
     SidebarMenuItem,
     SidebarMenuButton,
-    SidebarMenuAction,
+    SidebarMenuAction, // peer component to menu button; for eg: button goes to a page & action opens a dropdown
     SidebarMenuBadge,
     SidebarMenuSkeleton,
     // submenu components used inside a menu component
     SidebarMenuSub,
-    SidebarMenuSubButton,
     SidebarMenuSubItem,
+    SidebarMenuSubButton,
 };
