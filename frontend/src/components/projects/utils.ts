@@ -1,9 +1,9 @@
 import type { LoaderFunction, LoaderFunctionArgs } from 'react-router-dom';
-import type { TProject } from '@/types';
+import type { ProjectsLoader, RouteHandle, TProject } from '@/types';
 import { API_BASE_URL, CACHE_KEYS } from '@/services/const';
 import RestServiceProxy from '@/services/rest-proxy';
 
-const loadProjects: LoaderFunction = async (args: LoaderFunctionArgs) => {
+const projectsLoader: LoaderFunction = async (args: LoaderFunctionArgs): Promise<ProjectsLoader> => {
     console.info('[LOADER] Project(s) ::', args);
 
     const projects = await RestServiceProxy.fetch<unknown>({
@@ -17,4 +17,8 @@ const loadProjects: LoaderFunction = async (args: LoaderFunctionArgs) => {
     return { projects: (projects?.products ?? []) as TProject[] };
 };
 
-export { loadProjects };
+const projectsHandle: RouteHandle = {
+    breadcrumb: () => ({ href: '/projects', label: 'Projects' }),
+};
+
+export { projectsLoader, projectsHandle };
