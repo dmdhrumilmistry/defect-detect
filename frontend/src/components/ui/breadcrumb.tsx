@@ -3,6 +3,7 @@ import { Slot } from '@radix-ui/react-slot';
 import { ChevronRight, MoreHorizontal } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { subtleIconStroke } from '@/styles/standard-classes';
 
 const Breadcrumb = React.forwardRef<
     HTMLElement,
@@ -67,7 +68,7 @@ BreadcrumbPage.displayName = 'BreadcrumbPage';
 
 const BreadcrumbSeparator = ({ children, className, ...props }: React.ComponentProps<'li'>) => (
     <li role="presentation" aria-hidden="true" className={cn('[&>svg]:w-3.5 [&>svg]:h-3.5', className)} {...props}>
-        {children ?? <ChevronRight />}
+        {children ?? <ChevronRight className={subtleIconStroke} />}
     </li>
 );
 BreadcrumbSeparator.displayName = 'BreadcrumbSeparator';
