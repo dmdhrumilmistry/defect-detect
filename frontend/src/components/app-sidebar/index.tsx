@@ -33,8 +33,8 @@ export default function AppSidebar(props: ComponentProps<typeof Sidebar>) {
         <Sidebar collapsible="icon" {...props}>
             <SidebarHeader>
                 <SidebarMenu>
-                    <SidebarMenuItem className="flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 group-data-[state=collapsed]:!px-0">
-                        <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                    <SidebarMenuItem className="flex w-full items-center gap-2 overflow-hidden p-2 text-left text-sm outline-none text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 group-data-[state=collapsed]:!px-0">
+                        <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
                             <AudioWaveform className="size-4" />
                         </div>
                         <div className="grid flex-1 text-left text-sm leading-tight">

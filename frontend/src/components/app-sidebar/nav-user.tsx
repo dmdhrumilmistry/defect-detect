@@ -18,9 +18,9 @@ export default function NavUser() {
     const { isMobile } = useSidebar();
     const userInfoUI = (
         <>
-            <Avatar className="h-8 w-8 rounded-lg">
+            <Avatar className="h-8 w-8 rounded-md">
                 <AvatarImage src={user.image} alt={user.username} />
-                <AvatarFallback className="rounded-lg">{user.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+                <AvatarFallback className="rounded-md">{user.username.slice(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{user.username}</span>
@@ -43,7 +43,7 @@ export default function NavUser() {
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
-                        className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+                        className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-md"
                         side={isMobile ? 'bottom' : 'right'}
                         align="end"
                         sideOffset={4}
