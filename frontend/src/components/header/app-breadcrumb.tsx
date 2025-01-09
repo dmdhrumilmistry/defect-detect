@@ -1,4 +1,5 @@
 import type { LoaderReturnValue, Maybe, RouteHandle } from '@/types';
+import { Fragment } from 'react';
 import { Link, type UIMatch, useMatches } from 'react-router-dom';
 import {
     Breadcrumb,
@@ -16,27 +17,28 @@ export default function AppBreadcrumb() {
         .map((match) => match.handle.breadcrumb?.(match.data));
     const lastBreadcrumb = breadcrumbs.pop();
 
-    if (!lastBreadcrumb) return <></>;
     return (
-        <Breadcrumb>
-            <BreadcrumbList>
-                {breadcrumbs.map(
-                    (breadcrumb) =>
-                        breadcrumb && (
-                            <>
-                                <BreadcrumbItem className="hidden md:block">
-                                    <BreadcrumbLink asChild>
-                                        <Link to={breadcrumb.href}>{breadcrumb?.label}</Link>
-                                    </BreadcrumbLink>
-                                </BreadcrumbItem>
-                                <BreadcrumbSeparator className="hidden md:block" />
-                            </>
-                        )
-                )}
-                <BreadcrumbItem>
-                    <BreadcrumbPage>{lastBreadcrumb.label}</BreadcrumbPage>
-                </BreadcrumbItem>
-            </BreadcrumbList>
-        </Breadcrumb>
+        lastBreadcrumb && (
+            <Breadcrumb>
+                <BreadcrumbList>
+                    {breadcrumbs.map(
+                        (breadcrumb) =>
+                            breadcrumb && (
+                                <Fragment key={breadcrumb.label}>
+                                    <BreadcrumbItem className="hidden md:block">
+                                        <BreadcrumbLink asChild>
+                                            <Link to={breadcrumb.href}>{breadcrumb?.label}</Link>
+                                        </BreadcrumbLink>
+                                    </BreadcrumbItem>
+                                    <BreadcrumbSeparator className="hidden md:block" />
+                                </Fragment>
+                            )
+                    )}
+                    <BreadcrumbItem>
+                        <BreadcrumbPage>{lastBreadcrumb.label}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                </BreadcrumbList>
+            </Breadcrumb>
+        )
     );
 }
