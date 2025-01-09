@@ -37,6 +37,9 @@ export type TProject = {
     readonly id: string;
     readonly title: string;
     readonly description: string;
+    readonly meta: {
+        updatedAt: string;
+    };
 };
 
 // Data loader function return type
