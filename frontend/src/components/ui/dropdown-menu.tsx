@@ -166,7 +166,7 @@ const DropdownMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTML
 DropdownMenuShortcut.displayName = 'DropdownMenuShortcut';
 
 export {
-    // main sidebar components
+    // main dropdown components
     DropdownMenu,
     DropdownMenuTrigger,
     DropdownMenuContent,
@@ -180,8 +180,9 @@ export {
     DropdownMenuShortcut,
     DropdownMenuPortal,
 
-    // group components used inside sidebar
+    // group components used inside dropdown
     DropdownMenuGroup,
+    // sub-group components used inside a group
     DropdownMenuSub,
     DropdownMenuSubTrigger,
     DropdownMenuSubContent,
