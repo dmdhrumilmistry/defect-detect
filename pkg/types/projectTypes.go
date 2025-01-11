@@ -1,6 +1,13 @@
 package types
 
-type ProjectHandler interface {
+type ProjectStore interface {
+	AddProject(project Project) (string, error)
+	GetTotalCount(filter interface{}) (int64, error)
+	GetUsingFilter(filter interface{}, page, limit, duration int) ([]Project, error)
+	GetProjectById(idParam string, duration int) ([]Project, error)
+	GetByName(name string, duration int) ([]Project, error)
+	DeleteByIds(idParams []string, duration int) (int64, error)
+	DeleteById(idParam string, duration int) (int64, error)
 }
 
 type Project struct {

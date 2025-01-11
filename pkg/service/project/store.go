@@ -16,17 +16,15 @@ import (
 const PROJECT_COLLECTION = "project"
 
 type ProjectStore struct {
-	db             *mongo.Database
-	collection     *mongo.Collection
-	componentStore types.ComponentStore
+	db         *mongo.Database
+	collection *mongo.Collection
 }
 
-func NewProjectStore(db *mongo.Database, componentStore types.ComponentStore) *ProjectStore {
+func NewProjectStore(db *mongo.Database) *ProjectStore {
 	collection := db.Collection(PROJECT_COLLECTION)
 	return &ProjectStore{
-		db:             db,
-		collection:     collection,
-		componentStore: componentStore,
+		db:         db,
+		collection: collection,
 	}
 }
 

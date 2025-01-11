@@ -13,6 +13,8 @@ type SbomStore interface {
 	GetPaginatedSboms(page, limit, duration int) ([]Sbom, error)
 	GetSbomById(idParam string, duration int) (Sbom, error)
 	GetSbomByName(name string, duration int) ([]Sbom, error)
+	DeleteByIds(idParams []string, duration int) (int64, error)
+	DeleteById(idParam string, duration int) (int64, error)
 }
 
 type Sbom struct {

@@ -289,7 +289,7 @@ func (c *ComponentStore) GetVulnerableComponents(componentNames, componentVersio
 	return components, total, err
 }
 
-func (c *ComponentStore) DeleteByIds(idParams []string, duration int) (int64, error) {
+func (c *ComponentStore) DeleteByIds(idParams []string, param string, duration int) (int64, error) {
 	// Convert string IDs to ObjectIDs
 	var objectIDs []primitive.ObjectID
 	for _, id := range idParams {
@@ -306,7 +306,10 @@ func (c *ComponentStore) DeleteByIds(idParams []string, duration int) (int64, er
 	defer cancel()
 
 	// Define the filter to match any of the ObjectIDs
-	filter := bson.M{"_id": bson.M{"$in": objectIDs}}
+	if param == "" {
+		param = "_id"
+	}
+	filter := bson.M{param: bson.M{"$in": objectIDs}}
 
 	result, err := c.collection.DeleteMany(ctx, filter)
 	if err != nil {
@@ -317,6 +320,6 @@ func (c *ComponentStore) DeleteByIds(idParams []string, duration int) (int64, er
 	return result.DeletedCount, nil
 }
 
-func (c *ComponentStore) DeleteById(idParam string, duration int) (int64, error) {
-	return c.DeleteByIds([]string{idParam}, duration)
+func (c *ComponentStore) DeleteById(idParam string, param string, duration int) (int64, error) {
+	return c.DeleteByIds([]string{idParam}, param, duration)
 }

@@ -1,6 +1,7 @@
 package project
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -13,12 +14,16 @@ import (
 )
 
 type ProjectHandler struct {
-	store *ProjectStore
+	store          types.ProjectStore
+	componentStore types.ComponentStore
+	sbomStore      types.SbomStore
 }
 
-func NewProjectHandler(store *ProjectStore) *ProjectHandler {
+func NewProjectHandler(store types.ProjectStore, sbomStore types.SbomStore, componentStore types.ComponentStore) *ProjectHandler {
 	return &ProjectHandler{
-		store: store,
+		store:          store,
+		componentStore: componentStore,
+		sbomStore:      sbomStore,
 	}
 }
 
@@ -27,6 +32,7 @@ func (p *ProjectHandler) RegisterRoutes(r *gin.Engine) {
 	r.POST("/api/v1/project", p.CreateProject)
 	r.GET("/api/v1/project", p.GetProjects)
 	r.GET("/api/v1/project/:id", p.GetProjectById)
+	r.DELETE("/api/v1/project/:id", p.DeleteProjectById)
 	// TODO: implement routes for updating and deleting project
 
 	log.Info().Msg("Project routes registered")
@@ -114,5 +120,72 @@ func (s *ProjectHandler) GetProjectById(c *gin.Context) {
 	}
 
 	// Return the item as JSON
-	c.JSON(http.StatusOK, projects)
+	if len(projects) > 0 {
+		c.JSON(http.StatusOK, projects[0])
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"err": "project not found",
+	})
+}
+
+// curl http://localhost:8080/api/v1/project/{project_id}
+func (s *ProjectHandler) DeleteProjectById(c *gin.Context) {
+	// Get the ID from the path parameter
+	var deleteSboms bool
+	var msg string
+	idParam := c.Param("id")
+	deleteSbom, _ := c.GetQuery("delete_sbom")
+
+	deleteSboms, err := strconv.ParseBool(deleteSbom)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to parse delete_sbom param. Using default value: false")
+		deleteSboms = false
+	}
+
+	if deleteSboms {
+		projects, err := s.store.GetProjectById(idParam, config.DefaultConfig.DbQueryTimeout)
+
+		if err == mongo.ErrNoDocuments {
+			c.JSON(http.StatusNotFound, gin.H{"error": "project not found"})
+			return
+		} else if err != nil {
+			log.Error().Err(err).Msg("failed to fetch project")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch project"})
+			return
+		}
+
+		deleteCount, err := s.componentStore.DeleteByIds(projects[0].Sboms, "sbom_id", config.DefaultConfig.DbQueryTimeout)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to delete sboms components")
+			msg += "failed to delete sbom components."
+		} else {
+			msg += fmt.Sprintf("%d sbom components deleted successfully.", deleteCount)
+			log.Info().Msgf("Total %d sbom components deleted", deleteCount)
+		}
+
+		deleteCount, err = s.sbomStore.DeleteByIds(projects[0].Sboms, config.DefaultConfig.DbQueryTimeout)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to delete sboms")
+			msg += "failed to delete sboms."
+		} else {
+			msg += fmt.Sprintf("%d sboms deleted successfully.", deleteCount)
+			log.Info().Msgf("Total %d sboms deleted", deleteCount)
+		}
+
+	}
+
+	_, err = s.store.DeleteById(idParam, config.DefaultConfig.DbQueryTimeout)
+	if err != nil {
+		log.Error().Err(err).Msgf("failed to delete project with id: %s", idParam)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to delete project. %s", msg)})
+		return
+	}
+	log.Info().Msgf("Project %s deleted successfully", idParam)
+
+	c.JSON(http.StatusNoContent, gin.H{
+		"msg": fmt.Sprintf("Project deleted successfully. %s", msg),
+	})
+
 }

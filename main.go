@@ -42,8 +42,8 @@ func main() {
 	componentHandler := component.NewComponentHandler(componentStore, sbomStore)
 	componentHandler.RegisterRoutes(r)
 
-	projectStore := project.NewProjectStore(mgo.Db, componentStore)
-	projectHandler := project.NewProjectHandler(projectStore)
+	projectStore := project.NewProjectStore(mgo.Db)
+	projectHandler := project.NewProjectHandler(projectStore, sbomStore, componentStore)
 	projectHandler.RegisterRoutes(r)
 
 	// Start the server
