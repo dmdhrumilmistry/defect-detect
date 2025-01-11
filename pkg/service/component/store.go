@@ -288,3 +288,35 @@ func (c *ComponentStore) GetVulnerableComponents(componentNames, componentVersio
 
 	return components, total, err
 }
+
+func (c *ComponentStore) DeleteByIds(idParams []string, duration int) (int64, error) {
+	// Convert string IDs to ObjectIDs
+	var objectIDs []primitive.ObjectID
+	for _, id := range idParams {
+		objID, err := primitive.ObjectIDFromHex(id)
+		if err != nil {
+			log.Error().Err(err).Msgf("Invalid ObjectID %s: %v", id, err)
+			continue
+		}
+		objectIDs = append(objectIDs, objID)
+	}
+
+	// Query MongoDB
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(duration)*time.Second)
+	defer cancel()
+
+	// Define the filter to match any of the ObjectIDs
+	filter := bson.M{"_id": bson.M{"$in": objectIDs}}
+
+	result, err := c.collection.DeleteMany(ctx, filter)
+	if err != nil {
+		log.Error().Err(err).Msgf("Failed to delete documents: %v", err)
+		return -1, err
+	}
+
+	return result.DeletedCount, nil
+}
+
+func (c *ComponentStore) DeleteById(idParam string, duration int) (int64, error) {
+	return c.DeleteByIds([]string{idParam}, duration)
+}
