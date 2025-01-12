@@ -13,6 +13,8 @@ type ComponentStore interface {
 	GetComponentById(idParam string, duration int) ([]Component, error)
 	GetComponentByName(name string, duration int) ([]Component, error)
 	GetVulnerableComponents(componentNames, componentVersions, sbomIds, compTypes, compNames, purls, versions []string, page, limit, duration int) (components []Component, total int64, err error)
+	DeleteByIds(idParams []string, param string, duration int) (int64, error)
+	DeleteById(idParam string, param string, duration int) (int64, error)
 }
 
 type Component struct {

@@ -7,6 +7,7 @@ import (
 	"github.com/dmdhrumilmistry/defect-detect/pkg/config"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/db"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/service/component"
+	"github.com/dmdhrumilmistry/defect-detect/pkg/service/project"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/service/sbom"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
@@ -40,6 +41,10 @@ func main() {
 	componentStore := component.NewComponentStore(mgo.Db, analyzer)
 	componentHandler := component.NewComponentHandler(componentStore, sbomStore)
 	componentHandler.RegisterRoutes(r)
+
+	projectStore := project.NewProjectStore(mgo.Db)
+	projectHandler := project.NewProjectHandler(projectStore, sbomStore, componentStore)
+	projectHandler.RegisterRoutes(r)
 
 	// Start the server
 	if err := r.Run(":" + config.DefaultConfig.HostPort); err != nil {

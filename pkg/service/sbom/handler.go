@@ -16,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -100,7 +101,7 @@ func (s *ComponentSbomHandler) GetSboms(c *gin.Context) {
 		return
 	}
 
-	total, err := s.store.GetComponentSbomTotalCount()
+	total, err := s.store.GetTotalCount(bson.M{})
 	if err != nil {
 		log.Error().Err(err).Msg("failed to get total sbom data")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse data"})
