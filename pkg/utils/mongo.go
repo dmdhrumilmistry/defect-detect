@@ -1,7 +1,11 @@
 package utils
 
 import (
+	"fmt"
+	"reflect"
 	"regexp"
+	"slices"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -35,4 +39,32 @@ func RemoveEmptyStrings(slice []string) []string {
 		}
 	}
 	return result
+}
+
+func ExcludeParamsFromStruct(data interface{}, params []string) (bson.M, error) {
+	result := bson.M{}
+	v := reflect.ValueOf(data)
+
+	// Ensure we are working with a struct
+	if v.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("expected a struct, got %s", v.Kind())
+	}
+
+	// Loop through all fields of the struct
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Type().Field(i)
+		fieldValue := v.Field(i)
+
+		// Skip the field if match is found
+		if slices.Contains(params, strings.ToLower(field.Name)) || field.Tag.Get("bson") == "_id" {
+			continue
+		}
+
+		// Only include non-empty fields
+		if !fieldValue.IsZero() {
+			result[field.Tag.Get("bson")] = fieldValue.Interface()
+		}
+	}
+
+	return result, nil
 }

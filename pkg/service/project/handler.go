@@ -32,8 +32,8 @@ func (p *ProjectHandler) RegisterRoutes(r *gin.Engine) {
 	r.POST("/api/v1/project", p.CreateProject)
 	r.GET("/api/v1/project", p.GetProjects)
 	r.GET("/api/v1/project/:id", p.GetProjectById)
+	r.PATCH("/api/v1/project/:id", p.UpdateProjectById)
 	r.DELETE("/api/v1/project/:id", p.DeleteProjectById)
-	// TODO: implement routes for updating and deleting project
 
 	log.Info().Msg("Project routes registered")
 }
@@ -103,12 +103,12 @@ func (p *ProjectHandler) GetProjects(c *gin.Context) {
 }
 
 // curl http://localhost:8080/api/v1/project/{project_id}
-func (s *ProjectHandler) GetProjectById(c *gin.Context) {
+func (p *ProjectHandler) GetProjectById(c *gin.Context) {
 	// Get the ID from the path parameter
 	idParam := c.Param("id")
 
 	// Convert the string ID to a MongoDB ObjectID
-	projects, err := s.store.GetProjectById(idParam, config.DefaultConfig.DbQueryTimeout)
+	projects, err := p.store.GetProjectById(idParam, config.DefaultConfig.DbQueryTimeout)
 
 	if err == mongo.ErrNoDocuments {
 		c.JSON(http.StatusNotFound, gin.H{"error": "project not found"})
@@ -128,6 +128,38 @@ func (s *ProjectHandler) GetProjectById(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"err": "project not found",
 	})
+}
+
+func (p *ProjectHandler) UpdateProjectById(c *gin.Context) {
+	var payload types.Project
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		log.Error().Err(err).Msg("failed to validate request")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to validate payload"})
+		return
+	}
+
+	idParam := c.Param("id")
+	payload.Id = idParam
+	if err := p.store.UpdateById(payload, config.DefaultConfig.DbQueryTimeout); err != nil {
+		log.Error().Err(err).Msgf("failed to update project details for id %s: %v", idParam, payload)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "failed to update project details",
+		})
+		return
+	}
+
+	if len(payload.Sboms) > payload.SbomsToRetain {
+		// latest sboms should be present at 0th position
+		payload.Sboms = payload.Sboms[:payload.SbomsToRetain]
+	}
+
+	if err := p.sbomStore.ValidateIds(payload.Sboms); err != nil {
+		log.Error().Err(err).Msgf("failed to validate sbom ids: %v", payload.Sboms)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to validate sbom ids"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"msg": "project details updated successfully"})
 }
 
 // curl http://localhost:8080/api/v1/project/{project_id}

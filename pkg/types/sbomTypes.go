@@ -9,12 +9,13 @@ import (
 
 type SbomStore interface {
 	AddComponentSbom(sbom cyclonedx.BOM) (string, error)
-	GetComponentSbomTotalCount() (int64, error)
+	GetTotalCount(filter interface{}) (int64, error)
 	GetPaginatedSboms(page, limit, duration int) ([]Sbom, error)
 	GetSbomById(idParam string, duration int) (Sbom, error)
 	GetSbomByName(name string, duration int) ([]Sbom, error)
 	DeleteByIds(idParams []string, duration int) (int64, error)
 	DeleteById(idParam string, duration int) (int64, error)
+	ValidateIds(ids []string) error
 }
 
 type Sbom struct {

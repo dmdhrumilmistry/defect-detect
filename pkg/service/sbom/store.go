@@ -2,6 +2,7 @@ package sbom
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/CycloneDX/cyclonedx-go"
@@ -40,9 +41,39 @@ func (c *ComponentSbomStore) AddComponentSbom(sbom cyclonedx.BOM) (string, error
 	return (result.InsertedID).(primitive.ObjectID).Hex(), nil
 }
 
-func (c *ComponentSbomStore) GetComponentSbomTotalCount() (int64, error) {
+func (c *ComponentSbomStore) ValidateIds(ids []string) error {
+	// Convert string IDs to ObjectIDs
+	var objectIDs []primitive.ObjectID
+	for _, id := range ids {
+		objID, err := primitive.ObjectIDFromHex(id)
+		if err != nil {
+			log.Error().Err(err).Msgf("Invalid ObjectID %s: %v", id, err)
+			continue
+		}
+		objectIDs = append(objectIDs, objID)
+	}
+
+	filter := bson.M{"_id": bson.M{
+		"$in": objectIDs,
+	}}
+
+	count, err := c.GetTotalCount(filter)
+	if err != nil {
+		return err
+	}
+
+	expectedLen := len(ids)
+	totalCount := int(count)
+	if expectedLen != totalCount {
+		return fmt.Errorf("expected sbom count to be %d got %d", expectedLen, totalCount)
+	}
+
+	return nil
+}
+
+func (c *ComponentSbomStore) GetTotalCount(filter interface{}) (int64, error) {
 	// Get total count of documents
-	total, err := c.collection.CountDocuments(context.TODO(), bson.M{})
+	total, err := c.collection.CountDocuments(context.TODO(), filter)
 	if err != nil {
 		return 0, err
 	}
