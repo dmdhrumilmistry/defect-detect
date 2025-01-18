@@ -14,15 +14,15 @@ import ProjectErrorBoundary from '@/components/project/error-boundary';
 
 // data loaders
 import { layoutLoader, layoutHandle } from '@/components/layout/utils';
-import { projectsLoader, projectsHandle } from '@/components/projects/utils';
-import { projectLoader, projectHandle } from '@/components/project/utils';
+import { projectsDataLoader, projectsAction, projectsHandle } from '@/components/projects/utils';
+import { projectLoader, projectHandle, projectAction } from '@/components/project/utils';
 
 const router = createBrowserRouter([
     {
         id: 'layoutRoute',
-        loader: layoutLoader,
         element: <Layout />,
         errorElement: <LayoutErrorBoundary />,
+        loader: layoutLoader,
         handle: layoutHandle,
         children: [
             {
@@ -39,16 +39,18 @@ const router = createBrowserRouter([
                     {
                         id: 'allProjectsRoute',
                         index: true,
-                        loader: projectsLoader,
                         element: <Projects />,
+                        loader: projectsDataLoader,
+                        action: projectsAction,
                         // no breadcrumb as its the index handler
                     },
                     {
                         id: 'projectRoute',
                         path: '/projects/:projectId',
-                        loader: projectLoader,
                         element: <Project />,
                         errorElement: <ProjectErrorBoundary />,
+                        loader: projectLoader,
+                        action: projectAction,
                         handle: projectHandle,
                     },
                 ],
