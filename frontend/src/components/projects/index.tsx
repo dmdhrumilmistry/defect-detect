@@ -1,7 +1,7 @@
-import type { ProjectsLoader, TProject } from '@/types';
-import { useState } from 'react';
-import { useLoaderData, useNavigation } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import type { ProjectsDataLoader, TProject } from '@/types';
+import { useEffect, useState } from 'react';
+import { useFetcher, useLoaderData } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 
 import {
     AlertDialog,
@@ -11,67 +11,52 @@ import {
     AlertDialogTitle,
     AlertDialogDescription,
     AlertDialogCancel,
-    AlertDialogAction,
 } from '@/components/ui/alert-dialog';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+
 import SearchBar from '@/components/shared/search-bar';
 import ProjectCard from '@/components/shared/project-card';
-import { subtleText } from '@/styles/standard-classes';
+import CreateProject from './create-project';
 
 export default function Projects() {
-    const { projects } = useLoaderData() as ProjectsLoader;
-    const navigation = useNavigation();
-    console.info('[COMP] Projects :: ', projects, navigation);
-
+    const { projects } = useLoaderData() as ProjectsDataLoader;
+    const fetcher = useFetcher();
     const [searchQuery, setSearchQuery] = useState('');
     const [projectMarkedForDeletion, setProjectMarkedForDeletion] = useState<TProject | null>(null);
+    console.info('[COMP] Projects :: ', projects, fetcher);
+
+    /**
+     * :: Perf Note ::
+     * Below filter will execute on each re-render hence this will become a bottleneck if we have large number of projects.
+     */
     const filteredProjects = projects.filter((project) =>
         project.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const clearProjectMarkedForDeletion = () => setProjectMarkedForDeletion(null);
-    const handleProjectDeletion = () => {
-        console.log('handleProjectDeletion :: ', projectMarkedForDeletion);
-        clearProjectMarkedForDeletion();
-        // TODO :: handle the project deletion action
+    const clearProjectMarkedForDeletion = () => {
+        if (fetcher.state === 'idle' && Boolean(projectMarkedForDeletion)) setProjectMarkedForDeletion(null);
     };
+    const handleProjectDeletion = () => {
+        if (!projectMarkedForDeletion) return;
+        fetcher.submit(null, {
+            method: 'delete',
+            action: `/projects/${projectMarkedForDeletion.id}`,
+            encType: 'application/json',
+        });
+    };
+
+    // if fetcher changes state then clear the project state is holding
+    useEffect(() => {
+        clearProjectMarkedForDeletion();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fetcher.state]);
 
     return (
         <>
             <div className="min-h-screen mx-auto max-w-[1392px] w-full p-4">
                 <div className="flex items-center justify-end gap-4">
                     <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button>
-                                <span className="hidden sm:block">New Project</span>
-                                <Plus className="block sm:hidden !size-5" />
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-[80%] sm:max-w-lg gap-6">
-                            <DialogHeader>
-                                <DialogTitle>Create a new project</DialogTitle>
-                            </DialogHeader>
-                            <div className="flex gap-2 flex-col">
-                                <Label htmlFor="name" className={subtleText}>
-                                    Name<span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                    id="name"
-                                    autoComplete="off"
-                                    placeholder="Project name..."
-                                    className="col-span-3"
-                                />
-                            </div>
-                            <DialogFooter>
-                                {/* TODO :: handle submission */}
-                                <Button type="submit">Create</Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                    <CreateProject />
                 </div>
                 <div className="w-full pt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredProjects.map((project) => (
@@ -85,18 +70,28 @@ export default function Projects() {
             </div>
 
             {/* confirm project deletion alert popup */}
-            <AlertDialog open={Boolean(projectMarkedForDeletion)}>
+            <AlertDialog open={Boolean(projectMarkedForDeletion)} onOpenChange={clearProjectMarkedForDeletion}>
                 <AlertDialogContent className="max-w-[80%] sm:max-w-lg">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{projectMarkedForDeletion?.title}</AlertDialogTitle>
+                        <AlertDialogTitle>Delete Project</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you absolutely sure? This action cannot be undone. This will permanently delete your
-                            project and remove your data from our servers.
+                            Are you sure you want to delete &quot;{projectMarkedForDeletion?.title}&quot;? This action
+                            cannot be undone. This will permanently delete your project and remove your data from our
+                            servers.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel onClick={clearProjectMarkedForDeletion}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleProjectDeletion}>Delete Project</AlertDialogAction>
+                        <AlertDialogCancel disabled={fetcher.state === 'submitting' ? true : false}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <Button
+                            variant="destructive"
+                            onClick={handleProjectDeletion}
+                            disabled={fetcher.state === 'submitting' ? true : false}
+                        >
+                            {fetcher.state === 'submitting' && <Loader2 className="animate-spin" />}
+                            Delete
+                        </Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
