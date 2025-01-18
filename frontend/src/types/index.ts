@@ -43,19 +43,19 @@ export type TProject = {
 };
 
 // Data loader function return type
-export type LayoutLoader = {
+export type LayoutDataLoader = {
     readonly user: TUser;
 };
 
-export type ProjectsLoader = {
+export type ProjectsDataLoader = {
     readonly projects: TProject[];
 };
 
-export type ProjectLoader = {
+export type ProjectDataLoader = {
     readonly project: TProject;
 };
 
-export type LoaderReturnValue = LayoutLoader | ProjectsLoader | ProjectLoader;
+export type LoaderReturnValue = LayoutDataLoader | ProjectsDataLoader | ProjectDataLoader;
 // -----
 
 export type RouteHandle = {

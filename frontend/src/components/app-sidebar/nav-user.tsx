@@ -1,4 +1,4 @@
-import type { LayoutLoader } from '@/types';
+import type { LayoutDataLoader } from '@/types';
 import { useRouteLoaderData } from 'react-router-dom';
 import { BadgeCheck, Bell, ChevronsUpDown, CreditCard, LogOut, Sparkles } from 'lucide-react';
 import {
@@ -14,7 +14,7 @@ import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/c
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function NavUser() {
-    const { user } = useRouteLoaderData('layoutRoute') as LayoutLoader;
+    const { user } = useRouteLoaderData('layoutRoute') as LayoutDataLoader;
     const { isMobile } = useSidebar();
     const userInfoUI = (
         <>

@@ -13,16 +13,16 @@ import Project from '@/components/project';
 import ProjectErrorBoundary from '@/components/project/error-boundary';
 
 // data loaders
-import { layoutLoader, layoutHandle } from '@/components/layout/utils';
+import { layoutDataLoader, layoutHandle } from '@/components/layout/utils';
 import { projectsDataLoader, projectsAction, projectsHandle } from '@/components/projects/utils';
-import { projectLoader, projectHandle, projectAction } from '@/components/project/utils';
+import { projectDataLoader, projectHandle, projectAction } from '@/components/project/utils';
 
 const router = createBrowserRouter([
     {
         id: 'layoutRoute',
         element: <Layout />,
         errorElement: <LayoutErrorBoundary />,
-        loader: layoutLoader,
+        loader: layoutDataLoader,
         handle: layoutHandle,
         children: [
             {
@@ -49,7 +49,7 @@ const router = createBrowserRouter([
                         path: '/projects/:projectId',
                         element: <Project />,
                         errorElement: <ProjectErrorBoundary />,
-                        loader: projectLoader,
+                        loader: projectDataLoader,
                         action: projectAction,
                         handle: projectHandle,
                     },
