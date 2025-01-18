@@ -1,10 +1,10 @@
 import type { LoaderFunction, LoaderFunctionArgs, ActionFunction, ActionFunctionArgs } from 'react-router-dom';
-import type { LoaderReturnValue, Maybe, ProjectLoader, RouteHandle, StringKVs, TProject } from '@/types';
+import type { LoaderReturnValue, Maybe, ProjectDataLoader, RouteHandle, StringKVs, TProject } from '@/types';
 import { API_BASE_URL, CACHE_KEYS } from '@/services/const';
 import RestServiceProxy from '@/services/rest-proxy';
 import { sleep } from '@/lib/utils';
 
-const projectLoader: LoaderFunction = async (args: LoaderFunctionArgs): Promise<ProjectLoader> => {
+const projectDataLoader: LoaderFunction = async (args: LoaderFunctionArgs): Promise<ProjectDataLoader> => {
     console.info('[LOADER] Project :: ', args);
     const projectId = args.params.projectId;
     if (!projectId) throw new Error('Project Id not found!');
@@ -46,4 +46,4 @@ const projectHandle: RouteHandle = {
     },
 };
 
-export { projectLoader, projectAction, projectHandle };
+export { projectDataLoader, projectAction, projectHandle };

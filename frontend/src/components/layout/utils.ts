@@ -1,10 +1,10 @@
 import type { LoaderFunction, LoaderFunctionArgs } from 'react-router-dom';
-import type { LayoutLoader, RouteHandle, TUser } from '@/types';
+import type { LayoutDataLoader, RouteHandle, TUser } from '@/types';
 import { COOKIE_KEYS, API_BASE_URL, CACHE_KEYS } from '@/services/const';
 import RestServiceProxy from '@/services/rest-proxy';
 import CookieService from '@/services/cookie';
 
-const layoutLoader: LoaderFunction = async (args: LoaderFunctionArgs): Promise<LayoutLoader> => {
+const layoutDataLoader: LoaderFunction = async (args: LoaderFunctionArgs): Promise<LayoutDataLoader> => {
     console.info('[LOADER] Layout ::', args);
     const userId = CookieService.get(COOKIE_KEYS.userId);
     if (!userId) throw new Error('User Id not found!');
@@ -23,6 +23,6 @@ const layoutHandle: RouteHandle = {
     breadcrumb: () => ({ href: '/', label: 'Dashboard' }),
 };
 
-export { layoutLoader, layoutHandle };
+export { layoutDataLoader, layoutHandle };
 
 // TODO :: if we find no loggedIn user then redirect to login page via redirect command - https://reactrouter.com/6.28.1/fetch/redirect
