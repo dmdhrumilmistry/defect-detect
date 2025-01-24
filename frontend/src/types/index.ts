@@ -58,6 +58,16 @@ export type ProjectDataLoader = {
 export type LoaderReturnValue = LayoutDataLoader | ProjectsDataLoader | ProjectDataLoader;
 // -----
 
+// Action function return type
+export type ProjectsActionError = {
+    error: {
+        status: string;
+        message: string;
+        code: number;
+    };
+};
+// -----
+
 export type RouteHandle = {
     readonly breadcrumb?: (data?: Maybe<LoaderReturnValue>) => { href: string; label: string };
 };

@@ -41,6 +41,14 @@ const projectsAction: ActionFunction = async (args: ActionFunctionArgs) => {
     // invalidate cache
     RestServiceProxy.invalidateCache(CACHE_KEYS.projects);
     return redirect('/projects/20');
+    // simulate the endpoint error
+    // return {
+    //     error: {
+    //         status: 'Failed',
+    //         message: 'Oops something went wrong while create project.',
+    //         code: 500,
+    //     },
+    // };
 };
 
 const projectsHandle: RouteHandle = {

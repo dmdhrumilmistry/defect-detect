@@ -1,16 +1,24 @@
-import { useEffect, type ChangeEvent } from 'react';
+// types
+import type { ProjectsActionError } from '@/types';
+import type { ChangeEvent } from 'react';
+
+// libs
+import { useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFetcher } from 'react-router-dom';
 import { Plus, Loader2, AlertCircle } from 'lucide-react';
 
+// shadcn/ui components
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
+// utilities
 import { convertFileToString } from '@/lib/utils';
 import { subtleText } from '@/styles/standard-classes';
 
@@ -43,7 +51,7 @@ export default function CreateProject() {
     const { unregister } = form;
     const mode = form.getValues('mode');
 
-    const fetcher = useFetcher();
+    const fetcher = useFetcher<ProjectsActionError>();
     const isSubmitting = fetcher.state === 'submitting';
     console.log('[COMP] CreateProject :: ', form, fetcher);
 
@@ -87,10 +95,18 @@ export default function CreateProject() {
                     <Plus className="block sm:hidden !size-5" />
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-[80%] sm:max-w-lg gap-8" disableClose={isSubmitting}>
-                <DialogHeader>
+            <DialogContent className="max-w-[80%] sm:max-w-lg gap-0" disableClose={isSubmitting}>
+                <DialogHeader className="mb-6">
                     <DialogTitle>Create a new project</DialogTitle>
                 </DialogHeader>
+
+                {fetcher.data?.error && (
+                    <Alert variant="destructive" className="mb-4">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>{fetcher.data?.error?.status}</AlertTitle>
+                        <AlertDescription>{fetcher.data?.error?.message}</AlertDescription>
+                    </Alert>
+                )}
 
                 <Form {...form}>
                     {/* eslint-disable-next-line @typescript-eslint/no-misused-promises */}
