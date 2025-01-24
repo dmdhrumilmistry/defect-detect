@@ -3,15 +3,18 @@ import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { Ellipsis, Trash } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+// shadcn/ui components
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import {
     DropdownMenu,
     DropdownMenuTrigger,
     DropdownMenuContent,
     DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+
+// utilities
+import { cn } from '@/lib/utils';
 import { borderClasses, focusVisibleClasses, subtleIconStroke, subtleText } from '@/styles/standard-classes';
 
 type ProjectCardProps = {

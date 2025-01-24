@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useFetcher, useLoaderData } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
+// shadcn/ui components
 import {
     AlertDialog,
     AlertDialogContent,
@@ -14,9 +15,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 
+// internal components
+import CreateProject from './create-project';
 import SearchBar from '@/components/shared/search-bar';
 import ProjectCard from '@/components/shared/project-card';
-import CreateProject from './create-project';
 
 export default function Projects() {
     const { projects } = useLoaderData() as ProjectsDataLoader;

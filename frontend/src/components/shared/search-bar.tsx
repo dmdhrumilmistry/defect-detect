@@ -1,9 +1,12 @@
 import type { ChangeEvent } from 'react';
 import { Search } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+// shadcn/ui components
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+
+// utilities
+import { cn } from '@/lib/utils';
 import { focusVisibleClasses, subtleIconStroke } from '@/styles/standard-classes';
 
 type SearchBarProps = {

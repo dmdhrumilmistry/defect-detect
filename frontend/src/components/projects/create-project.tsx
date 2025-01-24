@@ -1,8 +1,6 @@
-// types
-import type { ProjectsActionError } from '@/types';
 import type { ChangeEvent } from 'react';
+import type { ProjectsActionError } from '@/types';
 
-// libs
 import { useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
