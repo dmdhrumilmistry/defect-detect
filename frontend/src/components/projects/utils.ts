@@ -3,11 +3,12 @@ import {
     type LoaderFunctionArgs,
     type ActionFunction,
     type ActionFunctionArgs,
-    redirect,
 } from 'react-router-dom';
 import type { ProjectsDataLoader, RouteHandle, TProject } from '@/types';
 import type { CreateProjectFormSchema } from './create-project';
+import { redirect } from 'react-router-dom';
 
+// utilities
 import RestServiceProxy from '@/services/rest-proxy';
 import { API_BASE_URL, CACHE_KEYS } from '@/services/const';
 import { convertStringToFile, sleep } from '@/lib/utils';

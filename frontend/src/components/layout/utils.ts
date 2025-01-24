@@ -1,8 +1,10 @@
 import type { LoaderFunction, LoaderFunctionArgs } from 'react-router-dom';
 import type { LayoutDataLoader, RouteHandle, TUser } from '@/types';
-import { COOKIE_KEYS, API_BASE_URL, CACHE_KEYS } from '@/services/const';
-import RestServiceProxy from '@/services/rest-proxy';
+
+// utilities
 import CookieService from '@/services/cookie';
+import RestServiceProxy from '@/services/rest-proxy';
+import { COOKIE_KEYS, API_BASE_URL, CACHE_KEYS } from '@/services/const';
 
 const layoutDataLoader: LoaderFunction = async (args: LoaderFunctionArgs): Promise<LayoutDataLoader> => {
     console.info('[LOADER] Layout ::', args);

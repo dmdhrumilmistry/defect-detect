@@ -1,7 +1,9 @@
 import type { LoaderFunction, LoaderFunctionArgs, ActionFunction, ActionFunctionArgs } from 'react-router-dom';
 import type { LoaderReturnValue, Maybe, ProjectDataLoader, RouteHandle, StringKVs, TProject } from '@/types';
-import { API_BASE_URL, CACHE_KEYS } from '@/services/const';
+
+// utilities
 import RestServiceProxy from '@/services/rest-proxy';
+import { API_BASE_URL, CACHE_KEYS } from '@/services/const';
 import { sleep } from '@/lib/utils';
 
 const projectDataLoader: LoaderFunction = async (args: LoaderFunctionArgs): Promise<ProjectDataLoader> => {
