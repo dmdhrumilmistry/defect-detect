@@ -34,7 +34,7 @@ func NewComponentSbomStore(db *mongo.Database) *ComponentSbomStore {
 func (c *ComponentSbomStore) AddComponentSbom(sbom cyclonedx.BOM) (string, error) {
 	result, err := c.collection.InsertOne(context.TODO(), sbom)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to ins")
+		log.Error().Err(err).Msg("failed to insert sbom")
 		return "", err
 	}
 

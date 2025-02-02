@@ -7,14 +7,31 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Custom validation function for mongo db object IDs
-func isValidMongoObjectID(id string) bool {
+func IsValidMongoObjectID(id string) bool {
 	// Ensure the ID is a 24-character hexadecimal string
 	re := regexp.MustCompile(`^[a-fA-F0-9]{24}$`)
 	return re.MatchString(id)
+}
+
+// convert str ids to mongo db object ids
+func GetMongoObjectIds(ids []string) (objectIDs []primitive.ObjectID) {
+	// Convert string IDs to ObjectIDs
+	for _, id := range ids {
+		objID, err := primitive.ObjectIDFromHex(id)
+		if err != nil {
+			log.Error().Err(err).Msgf("Invalid ObjectID %s: %v", id, err)
+			continue
+		}
+		objectIDs = append(objectIDs, objID)
+	}
+
+	return objectIDs
 }
 
 func BuildDynamicContainsFilter(conditions map[string][]string) bson.M {
