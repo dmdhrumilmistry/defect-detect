@@ -12,7 +12,7 @@ import (
 
 type ctxKey string
 
-const UserCtxKey ctxKey = "userId"
+const UserCtxKey ctxKey = "user"
 
 func CreateJWT(userId string) (string, error) {
 	expiration := time.Second * time.Duration(config.DefaultConfig.JWTExpirationInSeconds)

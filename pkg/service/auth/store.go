@@ -96,22 +96,23 @@ func (a *AuthStore) GetUserByEmail(email string, duration int) (user types.User,
 }
 
 // HasPermission checks if a user has access to a given resources (attributes).
-func (c *AuthStore) HasPermission(userID, attributes []string, authOperator string) (bool, error) {
+func (c *AuthStore) HasPermission(user types.User, attributes []string, authOperator string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.DefaultConfig.DbQueryTimeout)*time.Second)
 	defer cancel()
 
-	// Fetch the user's groups from MongoDB
-	var user types.User
-	err := c.userCollection.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
-	if err != nil {
-		log.Error().Err(err).Msg("Error fetching user")
-		return false, err
-	}
+	// // Fetch the user's groups from MongoDB
+	// var user types.User
+	// err := c.userCollection.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
+	// if err != nil {
+	// 	log.Error().Err(err).Msg("Error fetching user")
+	// 	return false, err
+	// }
 
+	// this is checked while validating JWT
 	// check whether user is inactive
-	if !user.IsActive {
-		return false, fmt.Errorf("user is inactive")
-	}
+	// if !user.IsActive {
+	// 	return false, fmt.Errorf("user is inactive")
+	// }
 
 	// return true is user is super user
 	if user.IsSuperUser {

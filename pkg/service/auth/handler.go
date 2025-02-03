@@ -100,7 +100,7 @@ func (a *AuthHandler) GoogleCallbackHandler(c *gin.Context) {
 }
 
 // middleware for validating JWT token
-func (a *AuthHandler) WithJWTAuth(c *gin.Context) gin.HandlerFunc {
+func (a *AuthHandler) WithJwtAuth(c *gin.Context) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// extract token from request header
 		tokenString := GetTokenFromRequest(c.Request)
@@ -127,15 +127,52 @@ func (a *AuthHandler) WithJWTAuth(c *gin.Context) gin.HandlerFunc {
 			return
 		}
 
+		// fetch user by id
 		user, err := a.store.GetUserById(userId, config.DefaultConfig.DbQueryTimeout)
 		if err != nil {
 			log.Printf("error while fetching user: %v\n", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"err": "failed to fetch user details"})
+			return
+		}
+
+		// check whether user is inactive
+		if !user.IsActive {
+			log.Warn().Msgf("inactive user tried to login: %s", user.Id)
+			c.JSON(http.StatusUnauthorized, gin.H{"err": "user is inactive"})
 			return
 		}
 
 		// set user in context
-		ctx := context.WithValue(c.Request.Context(), UserCtxKey, user.Id)
+		ctx := context.WithValue(c.Request.Context(), UserCtxKey, user)
 		c.Request.WithContext(ctx)
+
+		// call handler function
+		c.Next()
+	}
+}
+
+// middleware for validating JWT token
+func (a *AuthHandler) HasPermission(c *gin.Context, attributes []string, authOperator string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, ok := c.Request.Context().Value(UserCtxKey).(types.User)
+		if !ok {
+			log.Error().Msg("failed to retrieve user from context")
+			c.JSON(http.StatusInternalServerError, gin.H{"err": "failed to check permissions"})
+			return
+		}
+
+		hasAccess, err := a.store.HasPermission(user, attributes, authOperator)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to check permissions")
+			c.JSON(http.StatusInternalServerError, gin.H{"err": "failed to check permissions"})
+			return
+		}
+
+		if !hasAccess {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			c.Abort()
+			return
+		}
 
 		// call handler function
 		c.Next()
