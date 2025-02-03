@@ -48,7 +48,7 @@ func (a *AuthHandler) InitAuth() {
 
 func (a *AuthHandler) RegisterRoutes(r *gin.Engine) {
 	// Google auth
-	r.GET("/auth/google", a.GoogleAuthHandler)
+	r.GET("/auth/", a.GoogleAuthHandler) // GET http://domain:8080/auth/?provider=google
 	r.GET("/auth/google/callback", a.GoogleCallbackHandler)
 
 	log.Info().Msg("Auth Providers routes registered")
@@ -68,7 +68,9 @@ func (a *AuthHandler) GoogleCallbackHandler(c *gin.Context) {
 		return
 	}
 
-	// log user details
+	// DEBUG: log user details
 	log.Info().Any("user", user).Msg("")
+
+	// create user if not exists and return paseto token
 	c.JSON(http.StatusAccepted, gin.H{"user": user})
 }
