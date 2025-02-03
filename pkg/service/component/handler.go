@@ -32,7 +32,7 @@ func (s *ComponentHandler) RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/component/:id", s.GetComponentById)
 	r.GET("/api/v1/component/getByName", s.GetComponentByName)
 	r.GET("/api/v1/component/vulns", s.GetVulnerableComponents)
-	log.Info().Msg("component routes registered")
+	log.Info().Msg("Component routes registered")
 }
 
 // curl -X POST "http://localhost:8080/api/v1/component?sbom_id=676852a1af6020598db6e8d6"

@@ -26,6 +26,10 @@ type Config struct {
 	// Secrets
 	GithubToken string
 
+	// Google Secrets for Oauth login
+	GoogleClientId     string
+	GoogleClientSecret string
+
 	// Analyzer Config
 	RunOsv  bool
 	RunMpaf bool
@@ -46,7 +50,13 @@ func NewConfig() *Config {
 		AppEnv:              env,
 		IsDevEnv:            env == "dev",
 		DefaultWorkersCount: getEnvInt("DEFAULT_WORKERS_COUNT", 30),
-		GithubToken:         getEnvString("GITHUB_TOKEN", ""),
+
+		// Github Secret
+		GithubToken: getEnvString("GITHUB_TOKEN", ""),
+
+		// Google secrets
+		GoogleClientId:     getEnvString("GOOGLE_CLIENT_ID", ""),
+		GoogleClientSecret: getEnvString("GOOGLE_CLIENT_SECRET", ""),
 
 		// Analyzer Config
 		RunOsv:  getEnvBool("RUN_OSV_ANALYZER"),

@@ -6,6 +6,7 @@ import (
 	anz "github.com/dmdhrumilmistry/defect-detect/pkg/analyzer"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/config"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/db"
+	"github.com/dmdhrumilmistry/defect-detect/pkg/service/auth"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/service/component"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/service/project"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/service/sbom"
@@ -34,6 +35,11 @@ func main() {
 
 	// create stores
 	log.Info().Msg("Registering Routes")
+
+	authStore := auth.NewAuthStore(mgo.Db)
+	authHandler := auth.NewAuthHandler(authStore)
+	authHandler.RegisterRoutes(r)
+
 	sbomStore := sbom.NewComponentSbomStore(mgo.Db)
 	sbomHandler := sbom.NewComponentSbomHandler(sbomStore)
 	sbomHandler.RegisterRoutes(r)
@@ -45,6 +51,7 @@ func main() {
 	projectStore := project.NewProjectStore(mgo.Db)
 	projectHandler := project.NewProjectHandler(projectStore, sbomStore, componentStore)
 	projectHandler.RegisterRoutes(r)
+	log.Info().Msg("Routes Registered Successfully")
 
 	// Start the server
 	if err := r.Run(":" + config.DefaultConfig.HostPort); err != nil {
