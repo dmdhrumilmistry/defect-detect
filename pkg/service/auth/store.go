@@ -2,11 +2,13 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/dmdhrumilmistry/defect-detect/pkg/config"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/types"
+	"github.com/dmdhrumilmistry/defect-detect/pkg/utils"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -33,21 +35,14 @@ func NewAuthStore(db *mongo.Database) *AuthStore {
 func (a *AuthStore) CreateUser(user types.User) (string, error) {
 	result, err := a.userCollection.InsertOne(context.TODO(), user)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to insert sbom")
+		log.Error().Err(err).Msg("failed to insert user")
 		return "", err
 	}
 
 	return (result.InsertedID).(primitive.ObjectID).Hex(), nil
 }
 
-// Collection Type: user/group. Default user collection
-func (c *AuthStore) GetTotalCount(filter interface{}, collectionType string) (int64, error) {
-	// configure collection as per collection type defaults to user collection
-	collection := c.userCollection
-	if collectionType == "group" {
-		collection = c.groupCollection
-	}
-
+func (c *AuthStore) GetTotalCount(filter interface{}, collection *mongo.Collection) (int64, error) {
 	// Get total count of documents
 	total, err := collection.CountDocuments(context.TODO(), filter)
 	if err != nil {
@@ -78,6 +73,28 @@ func (c *AuthStore) GetUserById(idParam string, duration int) (types.User, error
 	return object, nil
 }
 
+func (a *AuthStore) GetUserByEmail(email string, duration int) (user types.User, err error) {
+	filter := bson.M{
+		"email": email,
+	}
+	users, err := utils.GetObjectsUsingFilter[types.User](a.userCollection, filter, 1, 1, duration)
+	if err != nil {
+		return user, err
+	}
+
+	if len(users) == 0 {
+		log.Warn().Msg("user not found for provided email id")
+		return user, fmt.Errorf("user not found for provided email id")
+	}
+
+	if len(users) > 0 {
+		log.Warn().Msgf("Multiple users found for provided email id")
+	}
+	user = users[0]
+
+	return user, nil
+}
+
 // HasPermission checks if a user has access to a given resources (attributes).
 func (c *AuthStore) HasPermission(userID, attributes []string, authOperator string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.DefaultConfig.DbQueryTimeout)*time.Second)
@@ -89,6 +106,16 @@ func (c *AuthStore) HasPermission(userID, attributes []string, authOperator stri
 	if err != nil {
 		log.Error().Err(err).Msg("Error fetching user")
 		return false, err
+	}
+
+	// check whether user is inactive
+	if !user.IsActive {
+		return false, fmt.Errorf("user is inactive")
+	}
+
+	// return true is user is super user
+	if user.IsSuperUser {
+		return true, nil
 	}
 
 	// check if auth operator is valid else configure it to default AND

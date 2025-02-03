@@ -1,6 +1,8 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"os"
 	"strconv"
 	"strings"
@@ -30,6 +32,10 @@ type Config struct {
 	GoogleClientId     string
 	GoogleClientSecret string
 
+	// JWT Config
+	JWTExpirationInSeconds int
+	JWTSecretKey           string
+
 	// Analyzer Config
 	RunOsv  bool
 	RunMpaf bool
@@ -38,9 +44,29 @@ type Config struct {
 
 var DefaultConfig = NewConfig()
 
+// generateJWTSecret generates a secure random JWT secret of the specified length.
+func generateJWTSecret(length int) (string, error) {
+	// Create a byte slice to hold the random bytes
+	secret := make([]byte, length)
+
+	// Read random bytes from the crypto/rand package
+	_, err := rand.Read(secret)
+	if err != nil {
+		return "", err
+	}
+
+	// Encode the random bytes to a base64 string
+	return base64.StdEncoding.EncodeToString(secret), nil
+}
+
 func NewConfig() *Config {
 	godotenv.Load()
 	env := strings.ToLower(getEnvString("ENV", "production"))
+
+	jwtSecret, err := generateJWTSecret(60)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to generate jwt secret")
+	}
 
 	return &Config{
 		HostPort:            getEnvString("HOST_PORT", "8080"),
@@ -57,6 +83,10 @@ func NewConfig() *Config {
 		// Google secrets
 		GoogleClientId:     getEnvString("GOOGLE_CLIENT_ID", ""),
 		GoogleClientSecret: getEnvString("GOOGLE_CLIENT_SECRET", ""),
+
+		// JWT Config
+		JWTExpirationInSeconds: getEnvInt("JWT_EXP", 3600),
+		JWTSecretKey:           getEnvString("JWT_SECRET_KEY", jwtSecret),
 
 		// Analyzer Config
 		RunOsv:  getEnvBool("RUN_OSV_ANALYZER"),
