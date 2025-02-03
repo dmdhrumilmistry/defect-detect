@@ -120,7 +120,8 @@ func (a *AuthHandler) WithJwtAuth(c *gin.Context) gin.HandlerFunc {
 		}
 
 		// extract user id from token
-		userId, ok := jwtToken.Claims.(jwt.MapClaims)["userId"].(string)
+		// update below key: UserCtxKey
+		userId, ok := jwtToken.Claims.(jwt.MapClaims)["user"].(string)
 		if !ok {
 			log.Error().Err(err).Msg("failed to extract user Id from JWT token")
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "invalid token"})
