@@ -14,7 +14,7 @@ type AuthStore interface {
 	GetUserByEmail(email string, duration int) (user User, err error)
 
 	// Permissions
-	WithJwtAuth() gin.HandlerFunc
+	WithJwtAuth() gin.HandlerFunc // adding it here as it requires to make db queries
 	HasPermission(user User, attributes []string, authOperator string) (bool, error)
 }
 

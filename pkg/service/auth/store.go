@@ -3,12 +3,15 @@ package auth
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/dmdhrumilmistry/defect-detect/pkg/config"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/types"
 	"github.com/dmdhrumilmistry/defect-detect/pkg/utils"
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -141,4 +144,58 @@ func (c *AuthStore) HasPermission(user types.User, attributes []string, authOper
 	}
 
 	return count > 0, nil // If count > 0, user has permission
+}
+
+// middleware for validating JWT token
+func (a *AuthStore) WithJwtAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// extract token from request header
+		tokenString := GetTokenFromRequest(c.Request)
+		log.Info().Msgf("token: %s", tokenString)
+
+		// validate token
+		jwtToken, err := ValidateJWT(tokenString)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to validate jwt token")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"err": "invalid token"})
+			return
+		}
+
+		if !jwtToken.Valid {
+			log.Error().Err(err).Msg("invalid jwt")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"err": "invalid token"})
+			return
+		}
+
+		// extract user id from token
+		// update below key: UserCtxKey
+		userId, ok := jwtToken.Claims.(jwt.MapClaims)["user"].(string)
+		if !ok {
+			log.Error().Err(err).Msg("failed to extract user Id from JWT token")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"err": "invalid token"})
+			return
+		}
+
+		// fetch user by id
+		user, err := a.GetUserById(userId, config.DefaultConfig.DbQueryTimeout)
+		if err != nil {
+			log.Printf("error while fetching user: %v\n", err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"err": "failed to fetch user details"})
+			return
+		}
+
+		// check whether user is inactive
+		if !user.IsActive {
+			log.Warn().Msgf("inactive user tried to login: %s", user.Id)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"err": "user is inactive"})
+			return
+		}
+
+		// set user in context
+		ctx := context.WithValue(c.Request.Context(), UserCtxKey, user)
+		c.Request.WithContext(ctx)
+
+		// call handler function
+		c.Next()
+	}
 }
