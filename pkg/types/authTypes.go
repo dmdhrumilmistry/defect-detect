@@ -3,6 +3,7 @@ package types
 import (
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -11,6 +12,9 @@ type AuthStore interface {
 	GetTotalCount(filter interface{}, collection *mongo.Collection) (int64, error)
 	GetUserById(idParam string, duration int) (User, error)
 	GetUserByEmail(email string, duration int) (user User, err error)
+
+	// Permissions
+	WithJwtAuth() gin.HandlerFunc
 	HasPermission(user User, attributes []string, authOperator string) (bool, error)
 }
 

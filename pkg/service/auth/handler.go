@@ -100,7 +100,7 @@ func (a *AuthHandler) GoogleCallbackHandler(c *gin.Context) {
 }
 
 // middleware for validating JWT token
-func (a *AuthHandler) WithJwtAuth(c *gin.Context) gin.HandlerFunc {
+func (a *AuthHandler) WithJwtAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// extract token from request header
 		tokenString := GetTokenFromRequest(c.Request)
@@ -153,7 +153,7 @@ func (a *AuthHandler) WithJwtAuth(c *gin.Context) gin.HandlerFunc {
 }
 
 // middleware for validating JWT token
-func (a *AuthHandler) HasPermission(c *gin.Context, attributes []string, authOperator string) gin.HandlerFunc {
+func (a *AuthHandler) HasPermission(attributes []string, authOperator string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user, ok := c.Request.Context().Value(UserCtxKey).(types.User)
 		if !ok {

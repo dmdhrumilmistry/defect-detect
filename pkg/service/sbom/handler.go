@@ -30,10 +30,10 @@ func NewComponentSbomHandler(store types.SbomStore) *ComponentSbomHandler {
 	}
 }
 
-func (s *ComponentSbomHandler) RegisterRoutes(r *gin.Engine) {
+func (s *ComponentSbomHandler) RegisterRoutes(r *gin.Engine, authStore types.AuthStore) {
 	// api v1
 	r.POST("/api/v1/sbom", s.UploadSbomHandler)
-	r.GET("/api/v1/sbom", s.GetSboms)
+	r.GET("/api/v1/sbom", authStore.WithJwtAuth(), s.GetSboms)
 	r.GET("/api/v1/sbom/:id", s.GetSbomById)
 	r.GET("/api/v1/sbom/getByComponentName", s.GetSbomByName)
 	r.POST("/api/v1/sbom/convert", s.ConvertSbom)

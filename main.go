@@ -42,7 +42,7 @@ func main() {
 
 	sbomStore := sbom.NewComponentSbomStore(mgo.Db)
 	sbomHandler := sbom.NewComponentSbomHandler(sbomStore)
-	sbomHandler.RegisterRoutes(r)
+	sbomHandler.RegisterRoutes(r, authStore)
 
 	componentStore := component.NewComponentStore(mgo.Db, analyzer)
 	componentHandler := component.NewComponentHandler(componentStore, sbomStore)
