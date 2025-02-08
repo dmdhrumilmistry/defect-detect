@@ -17,13 +17,15 @@ type ProjectHandler struct {
 	store          types.ProjectStore
 	componentStore types.ComponentStore
 	sbomStore      types.SbomStore
+	authStore      types.AuthStore
 }
 
-func NewProjectHandler(store types.ProjectStore, sbomStore types.SbomStore, componentStore types.ComponentStore) *ProjectHandler {
+func NewProjectHandler(store types.ProjectStore, sbomStore types.SbomStore, componentStore types.ComponentStore, authStore types.AuthStore) *ProjectHandler {
 	return &ProjectHandler{
 		store:          store,
 		componentStore: componentStore,
 		sbomStore:      sbomStore,
+		authStore:      authStore,
 	}
 }
 

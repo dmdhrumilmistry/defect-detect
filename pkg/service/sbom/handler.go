@@ -21,16 +21,18 @@ import (
 )
 
 type ComponentSbomHandler struct {
-	store types.SbomStore
+	authStore types.AuthStore
+	store     types.SbomStore
 }
 
-func NewComponentSbomHandler(store types.SbomStore) *ComponentSbomHandler {
+func NewComponentSbomHandler(store types.SbomStore, authStore types.AuthStore) *ComponentSbomHandler {
 	return &ComponentSbomHandler{
-		store: store,
+		store:     store,
+		authStore: authStore,
 	}
 }
 
-func (s *ComponentSbomHandler) RegisterRoutes(r *gin.Engine) {
+func (s *ComponentSbomHandler) RegisterRoutes(r *gin.Engine, authStore types.AuthStore) {
 	// api v1
 	r.POST("/api/v1/sbom", s.UploadSbomHandler)
 	r.GET("/api/v1/sbom", s.GetSboms)
