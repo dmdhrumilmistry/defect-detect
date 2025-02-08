@@ -99,31 +99,3 @@ func (a *AuthHandler) GoogleCallbackHandler(c *gin.Context) {
 		"token":   token,
 	})
 }
-
-// middleware for validating JWT token
-func (a *AuthHandler) HasPermission(attributes []string, authOperator string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		user, ok := c.Request.Context().Value(UserCtxKey).(types.User)
-		if !ok {
-			log.Error().Msg("failed to retrieve user from context")
-			c.JSON(http.StatusInternalServerError, gin.H{"err": "failed to check permissions"})
-			return
-		}
-
-		hasAccess, err := a.store.HasPermission(user, attributes, authOperator)
-		if err != nil {
-			log.Error().Err(err).Msg("failed to check permissions")
-			c.JSON(http.StatusInternalServerError, gin.H{"err": "failed to check permissions"})
-			return
-		}
-
-		if !hasAccess {
-			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
-			c.Abort()
-			return
-		}
-
-		// call handler function
-		c.Next()
-	}
-}

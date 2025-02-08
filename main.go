@@ -44,15 +44,15 @@ func main() {
 	r.Use(authStore.WithJwtAuth())
 
 	sbomStore := sbom.NewComponentSbomStore(mgo.Db)
-	sbomHandler := sbom.NewComponentSbomHandler(sbomStore)
+	sbomHandler := sbom.NewComponentSbomHandler(sbomStore, authStore)
 	sbomHandler.RegisterRoutes(r, authStore)
 
 	componentStore := component.NewComponentStore(mgo.Db, analyzer)
-	componentHandler := component.NewComponentHandler(componentStore, sbomStore)
+	componentHandler := component.NewComponentHandler(componentStore, sbomStore, authStore)
 	componentHandler.RegisterRoutes(r)
 
 	projectStore := project.NewProjectStore(mgo.Db)
-	projectHandler := project.NewProjectHandler(projectStore, sbomStore, componentStore)
+	projectHandler := project.NewProjectHandler(projectStore, sbomStore, componentStore, authStore)
 	projectHandler.RegisterRoutes(r)
 	log.Info().Msg("Routes Registered Successfully")
 

@@ -90,7 +90,7 @@ func (a *AuthStore) GetUserByEmail(email string, duration int) (user types.User,
 		return user, fmt.Errorf("user not found for provided email id")
 	}
 
-	if len(users) > 0 {
+	if len(users) > 1 {
 		log.Warn().Msgf("Multiple users found for provided email id")
 	}
 	user = users[0]
@@ -131,11 +131,18 @@ func (c *AuthStore) HasPermission(user types.User, attributes []string, authOper
 		attributeFilterSymbol = "$all"
 	}
 
+	if len(user.Groups) == 0 {
+		log.Warn().Msgf("User %s does not belong to any group", user.Id)
+		return false, nil
+	}
+
 	// Check if any of user's groups has the required attribute
 	filter := bson.M{
 		"_id":        bson.M{"$in": user.Groups},                // Find groups the user belongs to
 		"attributes": bson.M{attributeFilterSymbol: attributes}, // Check if resource exists in attributes
 	}
+
+	log.Debug().Msgf("filter: %v", filter)
 
 	count, err := c.groupCollection.CountDocuments(ctx, filter)
 	if err != nil {
@@ -192,7 +199,34 @@ func (a *AuthStore) WithJwtAuth() gin.HandlerFunc {
 
 		// set user in context
 		ctx := context.WithValue(c.Request.Context(), UserCtxKey, user)
-		c.Request.WithContext(ctx)
+		c.Request = c.Request.WithContext(ctx)
+
+		// call handler function
+		c.Next()
+	}
+}
+
+// middleware for validating User permission
+func (a *AuthStore) ValidatePerms(attributes []string, authOperator string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, ok := c.Request.Context().Value(UserCtxKey).(types.User)
+		if !ok {
+			log.Error().Msg("failed to retrieve user from context")
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"err": "failed to check permissions"})
+			return
+		}
+
+		hasAccess, err := a.HasPermission(user, attributes, authOperator)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to check permissions")
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"err": "failed to check permissions"})
+			return
+		}
+
+		if !hasAccess {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			return
+		}
 
 		// call handler function
 		c.Next()

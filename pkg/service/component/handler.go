@@ -16,12 +16,14 @@ import (
 type ComponentHandler struct {
 	store     types.ComponentStore
 	sbomStore types.SbomStore
+	authStore types.AuthStore
 }
 
-func NewComponentHandler(store types.ComponentStore, sbomStore types.SbomStore) *ComponentHandler {
+func NewComponentHandler(store types.ComponentStore, sbomStore types.SbomStore, authStore types.AuthStore) *ComponentHandler {
 	return &ComponentHandler{
 		store:     store,
 		sbomStore: sbomStore,
+		authStore: authStore,
 	}
 }
 
