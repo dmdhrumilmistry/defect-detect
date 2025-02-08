@@ -18,8 +18,8 @@ func CreateJWT(userId string) (string, error) {
 	expiration := time.Second * time.Duration(config.DefaultConfig.JWTExpirationInSeconds)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userId":    userId,
-		"expiredAt": time.Now().Add(expiration).Unix(),
+		string(UserCtxKey): userId,
+		"expiredAt":        time.Now().Add(expiration).Unix(),
 	})
 
 	tokenStr, err := token.SignedString([]byte(config.DefaultConfig.JWTSecretKey))

@@ -40,6 +40,9 @@ func main() {
 	authHandler := auth.NewAuthHandler(authStore)
 	authHandler.RegisterRoutes(r)
 
+	// add auth for remaining service endpoints
+	r.Use(authStore.WithJwtAuth())
+
 	sbomStore := sbom.NewComponentSbomStore(mgo.Db)
 	sbomHandler := sbom.NewComponentSbomHandler(sbomStore)
 	sbomHandler.RegisterRoutes(r, authStore)

@@ -51,6 +51,9 @@ func (a *AuthHandler) RegisterRoutes(r *gin.Engine) {
 	r.GET("/auth/", a.GoogleAuthHandler) // GET http://domain:8080/auth/?provider=google
 	r.GET("/auth/google/callback", a.GoogleCallbackHandler)
 
+	// use authstore auth middleware if sensitive actions are
+	// performed or pii details are returned in response
+
 	log.Info().Msg("Auth Providers routes registered")
 }
 

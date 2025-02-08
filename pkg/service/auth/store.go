@@ -168,8 +168,7 @@ func (a *AuthStore) WithJwtAuth() gin.HandlerFunc {
 		}
 
 		// extract user id from token
-		// update below key: UserCtxKey
-		userId, ok := jwtToken.Claims.(jwt.MapClaims)["user"].(string)
+		userId, ok := jwtToken.Claims.(jwt.MapClaims)[string(UserCtxKey)].(string)
 		if !ok {
 			log.Error().Err(err).Msg("failed to extract user Id from JWT token")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"err": "invalid token"})
