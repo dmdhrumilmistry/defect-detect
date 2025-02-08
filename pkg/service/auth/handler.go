@@ -29,10 +29,8 @@ func NewAuthHandler(store types.AuthStore) *AuthHandler {
 // InitAuth initializes the authentication providers
 func (a *AuthHandler) InitAuth() {
 	log.Info().Msg("Initializing Auth Providers")
-	domainUrl := "http://localhost:8080"
-	googleRedirectUri := "/auth/google/callback"
 
-	googleRedirectUrl := domainUrl + googleRedirectUri
+	googleRedirectUrl := config.DefaultConfig.GetBaseUrl() + "/auth/google/callback"
 	log.Info().Msgf("Google Redirect Url: %s", googleRedirectUrl)
 
 	goth.UseProviders(

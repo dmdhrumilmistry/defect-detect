@@ -3,6 +3,7 @@ package config
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -13,7 +14,10 @@ import (
 
 type Config struct {
 	// Host config
-	HostPort string
+	HostPort      string // 8080
+	Host          string // localhost
+	Proto         string // http
+	DomainBaseUrl string // http://localhost:8080
 
 	// Db Config
 	DbUri          string
@@ -69,7 +73,11 @@ func NewConfig() *Config {
 	}
 
 	return &Config{
-		HostPort:            getEnvString("HOST_PORT", "8080"),
+		HostPort: getEnvString("HOST_PORT", "8080"),
+		Host:     getEnvString("HOST", "localhost"),
+		Proto:    getEnvString("PROTO", "http"),
+		// DomainBaseUrl: ,
+
 		DbUri:               getEnvString("DB_URI", "mongodb://localhost:27017"),
 		DbName:              getEnvString("DB_NAME", "defectdetect"),
 		DbQueryTimeout:      getEnvInt("DB_QUERY_TIMEOUT", 5),
@@ -93,6 +101,14 @@ func NewConfig() *Config {
 		RunMpaf: getEnvBool("RUN_MPAF_ANALYZER"),
 		RunEpss: getEnvBool("RUN_EPSS_ANALYZER"),
 	}
+}
+
+func (c *Config) GetBaseUrl() string {
+	if c.DomainBaseUrl == "" {
+		c.DomainBaseUrl = fmt.Sprintf("%s://%s:%s", c.Proto, c.Host, c.HostPort)
+	}
+
+	return c.DomainBaseUrl
 }
 
 func getEnvString(key, defaultValue string) string {
